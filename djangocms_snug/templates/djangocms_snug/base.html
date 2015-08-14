@@ -1,0 +1,20 @@
+{% load cms_tags staticfiles sekizai_tags %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% render_block "css" %}
+    {% addtoblock "css" %}
+        <link rel="stylesheet" href="{% static "djangocms_snug/css/angular-material.min.css" %}"/>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=RobotoDraft:300,400,500,700,400italic">
+    {% endaddtoblock %}
+</head>
+<body>
+    {% block content %}{% endblock content %}
+    {% render_block "js" %}
+    {% addtoblock "js" %}
+        <script type="application/javascript" src="{% static "djangocms_snug/js/app.js" %}"></script>
+    {% endaddtoblock %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{
+  "name": "djangocms-snug",
+  "version": "0.0.1",
+  "devDependencies": {
+    "browserify": "^11.0.1",
+    "browserify-ngannotate": "^1.0.1",
+    "browserify-shim": "^3.8.10",
+    "gulp": "^3.9.0",
+    "gulp-autoprefixer": "^2.3.1",
+    "gulp-filter": "^3.0.0",
+    "gulp-jshint": "^1.11.2",
+    "gulp-sourcemaps": "^1.5.2",
+    "gulp-uglify": "^1.2.0",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
+  },
+  "browser": {
+    "angular": "./bower_components/angular/angular.js",
+    "angular.animate": "./bower_components/angular-animate/angular-animate.js",
+    "angular.aria": "./bower_components/angular-aria/angular-aria.js",
+    "angular.cookies": "./bower_components/angular-cookies/angular-cookies.js",
+    "angular.material": "./bower_components/angular-material/angular-material.js",
+    "restangular": "./bower_components/restangular/dist/restangular.js",
+    "lodash": "./bower_components/lodash/lodash.js"
+  },
+  "browserify-shim": {
+    "angular": "angular",
+    "ngCookies": "angular.cookies",
+    "ngMaterial": "angular.material",
+    "lodash": {
+      "exports": "_"
+    },
+    "angular.material": {
+      "depends": ["angular", "angular.animate", "angular.aria"]
+    },
+    "restangular": {
+      "exports": "restangular",
+      "depends": [
+        "lodash:_"
+      ]
+    }
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
+  }
+}
