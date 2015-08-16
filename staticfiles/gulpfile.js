@@ -29,12 +29,12 @@ function keepAlive(error) {
  * */
 gulp.task('jshint', function () {
     var filter = gulpFilter([
-        'app/js/*.js',
-        'app/js/**/*.js',
-        '!app/js/vendor/*.js',
-        '!app/js/vendor/**/*.js'
+        './app/js/*.js',
+        './app/js/**/*.js',
+        '!./app/js/vendor/*.js',
+        '!./app/js/vendor/**/*.js'
     ]);
-    gulp.src(['app/js/*.js', 'app/**/*.js'])
+    gulp.src(['./app/js/*.js', './app/**/*.js'])
         .pipe(filter)
         .pipe(jshint())
         .pipe(jshint.reporter('default'));
@@ -45,7 +45,7 @@ gulp.task('jshint', function () {
  * */
 gulp.task('compile:javascript', function () {
     var b = browserify({
-        entries: 'app/js/main.js',
+        entries: './app/js/main.js',
         debug: true,
         transform: [ngAnnotate]
     });
@@ -54,8 +54,8 @@ gulp.task('compile:javascript', function () {
         .pipe(source('app.js'))
         .pipe(buffer())
         .pipe(sourcemaps.init({loadMaps: true}))
-        // Pipeline transformations here
-        .pipe(uglify()).on('error', keepAlive)
+            // Pipeline transformations here
+            //.pipe(uglify()).on('error', keepAlive)
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/js'));
 });
@@ -73,7 +73,7 @@ gulp.task('copy:css', function () {
  * Copy fonts task
  * */
 gulp.task('copy:fonts', function () {
-    gulp.src('app/fonts/**/*.{eot,svg,ttf,woff,woff2}')
+    gulp.src('./app/fonts/**/*.{eot,svg,ttf,woff,woff2}')
         .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/fonts'));
 });
 
@@ -81,7 +81,7 @@ gulp.task('copy:fonts', function () {
  * Copy images task
  * */
 gulp.task('copy:images', function () {
-    gulp.src('app/images/**/*.{jpg,jpeg,png,svg}')
+    gulp.src('./app/images/**/*.{jpg,jpeg,png,svg}')
         .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/images'));
 });
 
@@ -90,7 +90,7 @@ gulp.task('copy:images', function () {
  * */
 gulp.watch(['app/scss/*.scss'], ['compile:sass']);
 gulp.watch(
-    ['app/js/*.js', 'app/js/**/*.js', '!app/js/vendor/*.js', '!app/js/vendor/**/*.js'],
+    ['./app/js/*.js', './app/js/**/*.js', '!./app/js/vendor/*.js', '!./app/js/vendor/**/*.js'],
     ['jshint', 'compile:javascript']);
 
 /**
