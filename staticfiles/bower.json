@@ -1,8 +1,9 @@
 {
   "name": "djangocms-snug",
   "devDependencies": {
-    "angular-material": "~0.10.1",
     "angular-cookies": "~1.4.4",
+    "angular-material": "~0.10.1",
+    "angular-ui-router": "~0.2.15",
     "restangular": "~1.5.1"
   }
 }

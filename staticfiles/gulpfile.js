@@ -6,6 +6,7 @@
 
 var gulp = require('gulp'),
     browserify = require('browserify'),
+    sass = require('gulp-sass'),
     sourcemaps = require('gulp-sourcemaps'),
     jshint = require('gulp-jshint'),
     gulpFilter = require('gulp-filter'),
@@ -23,6 +24,27 @@ function keepAlive(error) {
     console.log('WARNING: The build did *not* succeed!');
     this.emit('end');
 }
+
+/**
+ * Sass Task
+ * Compile scss files into css
+ * */
+gulp.task('compile:sass', function() {
+    return gulp.src(['./app/scss/*.scss', '!./app/scss/_*.scss'])
+        .pipe(sass({
+            errLogToConsole: true,
+            precision: 8,
+            imagePath: './app/images'
+        }))
+        .pipe(sourcemaps.init())
+        .pipe(sass({outputStyle: 'compressed'})
+            .on('error', keepAlive)
+        )
+        .pipe(autoprefixer('last 2 versions', '> 1%', 'ie8'))
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/css'))
+});
+
 
 /**
  * JSHint task
@@ -88,7 +110,7 @@ gulp.task('copy:images', function () {
 /**
  * Watcher tasks
  * */
-gulp.watch(['app/scss/*.scss'], ['compile:sass']);
+gulp.watch(['./app/scss/*.scss'], ['compile:sass']);
 gulp.watch(
     ['./app/js/*.js', './app/js/**/*.js', '!./app/js/vendor/*.js', '!./app/js/vendor/**/*.js'],
     ['jshint', 'compile:javascript']);
@@ -97,6 +119,6 @@ gulp.watch(
  * Default task.
  * Watch files for changes and run actions
  * */
-gulp.task('default', ['compile:javascript', 'copy:css', 'copy:fonts', 'copy:images'], function () {
+gulp.task('default', ['compile:javascript', 'compile:sass', 'copy:css', 'copy:fonts', 'copy:images'], function () {
 
 });
