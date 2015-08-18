@@ -201,7 +201,7 @@ module.exports = function ($scope, $mdBottomSheet) {
 
 },{}],5:[function(require,module,exports){
 /**
- * Index file for the main site.
+ * Index file for the dashboard module.
  */
 
 'use strict';
@@ -68732,6 +68732,12 @@ module.exports={
     "gulp-sass": "^2.0.4",
     "gulp-sourcemaps": "^1.5.2",
     "gulp-uglify": "^1.2.0",
+    "jasmine-core": "^2.3.4",
+    "karma": "^0.13.9",
+    "karma-browserify": "^4.3.0",
+    "karma-jasmine": "^0.3.6",
+    "karma-phantomjs-launcher": "^0.2.1",
+    "phantomjs": "^1.9.18",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   },

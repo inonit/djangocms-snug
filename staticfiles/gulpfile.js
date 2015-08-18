@@ -14,7 +14,8 @@ var gulp = require('gulp'),
     ngAnnotate = require('browserify-ngannotate'),
     buffer = require('vinyl-buffer'),
     source = require('vinyl-source-stream'),
-    autoprefixer = require('gulp-autoprefixer');
+    autoprefixer = require('gulp-autoprefixer'),
+    karma = require('karma');
 
 /**
  * Prevents Gulp from crashing on error.
@@ -114,6 +115,18 @@ gulp.watch(['./app/scss/*.scss'], ['compile:sass']);
 gulp.watch(
     ['./app/js/*.js', './app/js/**/*.js', '!./app/js/vendor/*.js', '!./app/js/vendor/**/*.js'],
     ['jshint', 'compile:javascript']);
+
+/**
+ * Karma test task.
+ *  $ gulp test
+ * */
+gulp.task('test', function (done) {
+    var server = new karma.Server({
+        configFile: __dirname + '/tests/karma.conf.js',
+        singleRun: true
+    });
+    return server.start();
+});
 
 /**
  * Default task.

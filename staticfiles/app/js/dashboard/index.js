@@ -1,5 +1,5 @@
 /**
- * Index file for the main site.
+ * Index file for the dashboard module.
  */
 
 'use strict';
