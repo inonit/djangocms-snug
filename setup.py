@@ -36,7 +36,9 @@ setup(
     install_requires=[
         "Django>=1.7.0",
         "django-cms>=3.1.0",
-        "djangocms-restapi>=0.0.1"
+        "djangocms-restapi>=0.0.1",
+        "djangorestframework",
+        "djangorestframework-jwt>=1.7.0"
     ],
     tests_require=[
         "nose",

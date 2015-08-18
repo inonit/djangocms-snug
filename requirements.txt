@@ -1,0 +1,7 @@
+Django>=1.7.0
+django-cms>=3.1.0
+djangocms-restapi>=0.0.1
+djangorestframework-jwt>=1.7.0
+nose
+mock
+coverage
