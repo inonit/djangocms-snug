@@ -6,22 +6,19 @@
 
 describe('Authentication Controllers', function () {
 
-    //beforeEach(require('angular').module('App'));
-    beforeEach(module('App'));
+    beforeEach(angular.mock.module('App'));
 
-    describe("LoginController", function () {
+    describe('LoginController', function () {
         var LoginController, scope;
         beforeEach(inject(
-            function($controller, $rootScope) {
+            function ($controller, $rootScope) {
                 scope = $rootScope.$new();
                 LoginController = $controller('LoginController', {$scope: scope})
             }
         ));
 
-        // Test goes here!
-        it("should say hello, world!", function () {
-            expect(scope).toBeDefined();
+        it('should say hello, world!', function() {
+            expect(scope.hello).toBe('hello, world');
         });
     });
-
 });

@@ -8,12 +8,11 @@ module.exports = function (config) {
         files: [
             'app/js/main.js',
             'bower_components/angular-mocks/angular-mocks.js',
-            'tests/specs/**/*.spec.js'
+            'tests/unit/**/*.spec.js'
         ],
         frameworks: ['browserify', 'jasmine'],
         preprocessors: {
-            'app/js/main.js': ['browserify'],
-            'tests/specs/**/*.spec.js': ['browserify']
+            'app/js/main.js': ['browserify']
         },
         reporters: ['progress'],        // available reporters: https://npmjs.org/browse/keyword/karma-reporter
         port: 9876,

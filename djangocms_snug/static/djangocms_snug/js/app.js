@@ -1,5 +1,85 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /**
+ * Handle login
+ */
+
+'use strict';
+
+module.exports = function($scope, AuthenticationService) {
+    $scope.hello = 'hello, world';
+};
+
+},{}],2:[function(require,module,exports){
+/**
+ * Index file for the auth module.
+ */
+
+'use strict';
+
+var module = require('angular').module('App');
+
+/**
+ * Controllers
+ * */
+module.controller('LoginController', ['$scope', 'AuthenticationService', require('./controllers/LoginController')]);
+
+/**
+ * Services
+ * */
+module.service('AuthenticationService', [require('./services/AuthenticationService')]);
+module.service('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
+module.service('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
+module.service('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
+
+},{"./controllers/LoginController":1,"./services/APITokenAuthService":3,"./services/APITokenRefreshService":4,"./services/APITokenVerifyService":5,"./services/AuthenticationService":6,"angular":18}],3:[function(require,module,exports){
+/**
+ * Provides a Restangular service for the
+ * /api/auth/api-token-auth/ endpoint.
+ */
+
+'use strict';
+
+module.exports = function (Restangular) {
+    return Restangular.service('auth/api-token-auth');
+};
+
+},{}],4:[function(require,module,exports){
+/**
+ * Provides a Restangular service for the
+ * /api/auth/api-token-refresh/ endpoint.
+ */
+
+'use strict';
+
+module.exports = function (Restangular) {
+    return Restangular.service('auth/api-token-refresh');
+};
+
+},{}],5:[function(require,module,exports){
+/**
+ * Provides a Restangular service for the
+ * /api/auth/api-token-verify/ endpoint.
+ */
+
+'use strict';
+
+module.exports = function (Restangular) {
+    return Restangular.service('auth/api-token-verify');
+};
+
+},{}],6:[function(require,module,exports){
+/**
+ * JWT Authentication service for djangocms-snug.
+ */
+
+'use strict';
+
+module.exports = function () {
+
+};
+
+},{}],7:[function(require,module,exports){
+/**
  * Main App Controller
  */
 
@@ -100,7 +180,7 @@ module.exports = function ($scope, $mdBottomSheet, $mdSidenav, $mdDialog) {
     };
 };
 
-},{}],2:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  *
  */
@@ -152,7 +232,7 @@ module.exports = function ($timeout, $q) {
     }
 };
 
-},{}],3:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  *
  */
@@ -171,7 +251,7 @@ module.exports = function ($scope, $mdDialog) {
     };
 };
 
-},{}],4:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  *
  */
@@ -199,7 +279,7 @@ module.exports = function ($scope, $mdBottomSheet) {
     };
 };
 
-},{}],5:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  * Index file for the dashboard module.
  */
@@ -216,7 +296,7 @@ module.controller('DemoController', ['$timeout', '$q', require('./controllers/De
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
 
-},{"./controllers/AppController":1,"./controllers/DemoController":2,"./controllers/DialogController":3,"./controllers/ListBottomSheetController":4,"angular":12}],6:[function(require,module,exports){
+},{"./controllers/AppController":7,"./controllers/DemoController":8,"./controllers/DialogController":9,"./controllers/ListBottomSheetController":10,"angular":18}],12:[function(require,module,exports){
 /**
  * Main file for bootstrapping the djangocms-snug application
  */
@@ -316,9 +396,10 @@ var App = angular.module('App', [
 /**
  * Require app components
  * */
+require('./auth');
 require('./dashboard');
 
-},{"../../package.json":15,"./dashboard":5,"angular":12,"angular.animate":7,"angular.cookies":9,"angular.material":10,"lodash":13,"restangular":14,"ui.router":11}],7:[function(require,module,exports){
+},{"../../package.json":21,"./auth":2,"./dashboard":11,"angular":18,"angular.animate":13,"angular.cookies":15,"angular.material":16,"lodash":19,"restangular":20,"ui.router":17}],13:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4105,7 +4186,7 @@ angular.module('ngAnimate', [])
 
 })(window, window.angular);
 
-},{}],8:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4500,7 +4581,7 @@ ngAriaModule.directive('ngShow', ['$aria', function($aria) {
 
 })(window, window.angular);
 
-},{}],9:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4823,7 +4904,7 @@ angular.module('ngCookies').provider('$$cookieWriter', function $$CookieWriterPr
 
 })(window, window.angular);
 
-},{}],10:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 (function (global){
 
 ; require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js");
@@ -22002,7 +22083,7 @@ angular.module("material.core").constant("$MD_THEME_CSS", "/* mixin definition ;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":7,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":8}],11:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":13,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":14}],17:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.15
@@ -26374,7 +26455,7 @@ angular.module('ui.router.state')
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
 
-},{}],12:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -54988,7 +55069,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],13:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -67350,7 +67431,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],14:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 (function (global){
 
 ; _ = global._ = require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js");
@@ -68717,7 +68798,7 @@ restangular.provider('Restangular', function() {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":13}],15:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":19}],21:[function(require,module,exports){
 module.exports={
   "name": "djangocms-snug",
   "version": "0.0.1",
@@ -68779,7 +68860,7 @@ module.exports={
   }
 }
 
-},{}]},{},[6])
+},{}]},{},[12])
 
 
 //# sourceMappingURL=app.js.map

@@ -97,4 +97,5 @@ var App = angular.module('App', [
 /**
  * Require app components
  * */
+require('./auth');
 require('./dashboard');
