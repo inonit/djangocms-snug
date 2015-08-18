@@ -4,6 +4,8 @@
 Resources
 =========
 
-Material design: http://www.google.com/design/spec/patterns/app-structure.html
+Material design:
+- http://www.google.com/design/spec/patterns/app-structure.html
+- https://medium.com/materialup-exploring-material-design
 
 
