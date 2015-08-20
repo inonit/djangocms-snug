@@ -5,8 +5,20 @@
 
 'use strict';
 
-module.exports = function($scope, AuthenticationService) {
-    $scope.hello = 'hello, world';
+module.exports = function($scope, $state, AuthenticationService) {
+    $scope.credentials = {
+        username: '',
+        password: ''
+    };
+
+    $scope.submit = function(credentials) {
+        console.log(credentials);
+        AuthenticationService.login(credentials).then(function() {
+            $state.go('app.dashboard');
+        }, function(reason) {
+            console.log(reason);
+        });
+    };
 };
 
 },{}],2:[function(require,module,exports){
@@ -21,7 +33,7 @@ var module = require('angular').module('App');
 /**
  * Controllers
  * */
-module.controller('LoginController', ['$scope', 'AuthenticationService', require('./controllers/LoginController')]);
+module.controller('LoginController', ['$scope', '$state', 'AuthenticationService', require('./controllers/LoginController')]);
 
 /**
  * Services
@@ -426,7 +438,7 @@ var App = angular.module('App', [
     /**
      * Restangular configuration
      * */
-    RestangularProvider.setBaseUrl('/api');
+    RestangularProvider.setBaseUrl('/snug/api');
     RestangularProvider.setRequestSuffix('/');
     RestangularProvider.setDefaultHttpFields({withCredentials: true});
 

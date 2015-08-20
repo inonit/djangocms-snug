@@ -9,7 +9,7 @@ var module = require('angular').module('App');
 /**
  * Controllers
  * */
-module.controller('LoginController', ['$scope', 'AuthenticationService', require('./controllers/LoginController')]);
+module.controller('LoginController', ['$scope', '$state', 'AuthenticationService', require('./controllers/LoginController')]);
 
 /**
  * Services

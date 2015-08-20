@@ -12,13 +12,11 @@
     {% render_block "css" %}
     {% addtoblock "css" %}
         <link rel="stylesheet" href="{% static "djangocms_snug/css/angular-material.min.css" %}"/>
-        <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> -->
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=RobotoDraft:300,400,500,700,400italic">
         <link rel="stylesheet" href="{% static "djangocms_snug/css/app.css" %}"/>
     {% endaddtoblock %}
 </head>
 <body layout="column">
-{#{% block content %}{% endblock content %}#}
 <section ui-view></section>
 {% render_block "js" %}
 {% addtoblock "js" %}

@@ -70,7 +70,7 @@ var App = angular.module('App', [
     /**
      * Restangular configuration
      * */
-    RestangularProvider.setBaseUrl('/api');
+    RestangularProvider.setBaseUrl('/snug/api');
     RestangularProvider.setRequestSuffix('/');
     RestangularProvider.setDefaultHttpFields({withCredentials: true});
 

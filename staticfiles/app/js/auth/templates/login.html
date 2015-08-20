@@ -1,1 +1,24 @@
-<h1>Login state</h1>
+<section layout="row" flex>
+    <md-content flex>
+        <ui-view layout="column" layout-fill layout-padding>
+            <div layout="row" layout-align="center center">
+                <div flex-gt-sm="90" flex-gt-md="40">
+                    <md-input-container flex>
+                        <label>Username</label>
+                        <input type="text" ng-model="ctrl.credentials.username">
+                    </md-input-container>
+                    <md-input-container>
+                        <label>Password</label>
+                        <input type="password" ng-model="ctrl.credentials.password">
+                    </md-input-container>
+                    <span layout="row" layout-align="center center">
+                        <md-button ng-click="submit(ctrl.credentials)" class="md-primary">
+                            <md-icon md-svg-icon="navigation:ic_arrow_forward_24px" aria-label="Login"></md-icon>
+                            <span>Login</span>
+                        </md-button>
+                    </span>
+                </div>
+            </div>
+        </ui-view>
+    </md-content>
+</section>
