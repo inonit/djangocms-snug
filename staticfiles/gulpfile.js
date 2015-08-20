@@ -4,18 +4,19 @@
 
 'use strict';
 
-var gulp = require('gulp'),
+var autoprefixer = require('gulp-autoprefixer'),
     browserify = require('browserify'),
-    sass = require('gulp-sass'),
-    sourcemaps = require('gulp-sourcemaps'),
-    jshint = require('gulp-jshint'),
-    gulpFilter = require('gulp-filter'),
-    uglify = require('gulp-uglify'),
-    ngAnnotate = require('browserify-ngannotate'),
     buffer = require('vinyl-buffer'),
+    gulp = require('gulp'),
+    gulpFilter = require('gulp-filter'),
+    jshint = require('gulp-jshint'),
+    karma = require('karma'),
+    ngAnnotate = require('browserify-ngannotate'),
+    sass = require('gulp-sass'),
     source = require('vinyl-source-stream'),
-    autoprefixer = require('gulp-autoprefixer'),
-    karma = require('karma');
+    sourcemaps = require('gulp-sourcemaps'),
+    templateCache = require('gulp-angular-templatecache'),
+    uglify = require('gulp-uglify');
 
 /**
  * Prevents Gulp from crashing on error.
@@ -25,6 +26,22 @@ function keepAlive(error) {
     console.log('WARNING: The build did *not* succeed!');
     this.emit('end');
 }
+
+/**
+ * JSHint task
+ * */
+gulp.task('jshint', function () {
+    var filter = gulpFilter([
+        './app/js/*.js',
+        './app/js/**/*.js',
+        '!./app/js/vendor/*.js',
+        '!./app/js/vendor/**/*.js'
+    ]);
+    gulp.src(['./app/js/*.js', './app/**/*.js'])
+        .pipe(filter)
+        .pipe(jshint())
+        .pipe(jshint.reporter('default'));
+});
 
 /**
  * Sass Task
@@ -46,27 +63,24 @@ gulp.task('compile:sass', function() {
         .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/css'))
 });
 
-
 /**
- * JSHint task
+ * Compile Angular templates
  * */
-gulp.task('jshint', function () {
-    var filter = gulpFilter([
-        './app/js/*.js',
-        './app/js/**/*.js',
-        '!./app/js/vendor/*.js',
-        '!./app/js/vendor/**/*.js'
-    ]);
-    gulp.src(['./app/js/*.js', './app/**/*.js'])
-        .pipe(filter)
-        .pipe(jshint())
-        .pipe(jshint.reporter('default'));
+gulp.task('compile:angular-templates', function () {
+    gulp.src('./app/js/**/templates/*.html')
+        .pipe(templateCache({
+            standalone: true
+            //module: 'App',
+            //moduleSystem: 'Browserify'
+        }))
+        .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/js'))
 });
+
 
 /**
  * Javascript task
  * */
-gulp.task('compile:javascript', function () {
+gulp.task('compile:javascript', ['jshint'], function () {
     var b = browserify({
         entries: './app/js/main.js',
         debug: true,
@@ -112,9 +126,10 @@ gulp.task('copy:images', function () {
  * Watcher tasks
  * */
 gulp.watch(['./app/scss/*.scss'], ['compile:sass']);
+gulp.watch(['./app/js/**/*.html'], ['compile:angular-templates']);
 gulp.watch(
     ['./app/js/*.js', './app/js/**/*.js', '!./app/js/vendor/*.js', '!./app/js/vendor/**/*.js'],
-    ['jshint', 'compile:javascript']);
+    ['compile:javascript']);
 
 /**
  * Karma test task.
@@ -132,6 +147,12 @@ gulp.task('test', function (done) {
  * Default task.
  * Watch files for changes and run actions
  * */
-gulp.task('default', ['compile:javascript', 'compile:sass', 'copy:css', 'copy:fonts', 'copy:images'], function () {
+gulp.task('default', [
+    'compile:javascript',
+    'compile:angular-templates',
+    'compile:sass',
+    'copy:css',
+    'copy:fonts',
+    'copy:images'], function () {
 
 });

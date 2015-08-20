@@ -15,6 +15,7 @@ var angular = require('angular'),
 
 
 var App = angular.module('App', [
+    'templates',
     'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
 
 ]).config(function ($httpProvider, $stateProvider, $urlRouterProvider,
@@ -123,20 +124,31 @@ var App = angular.module('App', [
         })
         .state('app', {
             abstract: true,
+            template: '<ui-view/>',
             data: {
                 requireLogin: true
             }
         })
         .state('app.dashboard', {
-            url: '/dashboard'
+            url: '/dashboard',
+            templateUrl: 'dashboard/templates/dashboard.html'
         })
-        .state('app.login', {
+        .state('auth', {
+            abstract: true,
+            template: '<ui-view/>',
+            data: {
+                requiredLogin: true
+            }
+        })
+        .state('auth.login', {
             url: '/auth/login',
+            controller: 'LoginController as ctrl',
+            templateUrl: 'auth/templates/login.html',
             data: {
                 requiredLogin: false
             }
         })
-        .state('app.logout', {
+        .state('auth.logout', {
             url: '/auth/logout'
         });
 
@@ -149,10 +161,10 @@ var App = angular.module('App', [
      * authorized for the requested state change. If not; redirect to
      * the login state.
      * */
-    $rootScope.$on('$stateChangeStart', function (e, toState, toParams) {
+    $rootScope.$on('$stateChangeStart', function (e, toState) {
         if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
             e.preventDefault();
-            //$state.go('app.login');
+            $state.go('auth.login');
         }
     });
 

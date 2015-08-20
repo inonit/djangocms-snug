@@ -17,11 +17,13 @@
         <link rel="stylesheet" href="{% static "djangocms_snug/css/app.css" %}"/>
     {% endaddtoblock %}
 </head>
-<body layout="column" ng-controller="AppController as ctrl">
-{% block content %}{% endblock content %}
+<body layout="column">
+{#{% block content %}{% endblock content %}#}
+<section ui-view></section>
 {% render_block "js" %}
 {% addtoblock "js" %}
     <script type="application/javascript" src="{% static "djangocms_snug/js/app.js" %}"></script>
+    <script type="application/javascript" src="{% static "djangocms_snug/js/templates.js" %}"></script>
 {% endaddtoblock %}
 </body>
 </html>
