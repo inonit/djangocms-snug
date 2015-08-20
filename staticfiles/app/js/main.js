@@ -10,17 +10,14 @@ var angular = require('angular'),
     ngMaterial = require('angular.material'),
     lodash = require('lodash'),
     restangular = require('restangular'),
+    storage = require("angular.storage"),
     uiRouter = require('ui.router');
 
 
 var App = angular.module('App', [
-    'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
+    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
 
-]).run(function ($rootScope, $cookies, Restangular) {
-
-    Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
-
-}).config(function ($httpProvider, $stateProvider, $urlRouterProvider,
+]).config(function ($httpProvider, $stateProvider, $urlRouterProvider,
                     $mdThemingProvider, $mdIconProvider, RestangularProvider) {
 
     /**
@@ -77,20 +74,97 @@ var App = angular.module('App', [
     RestangularProvider.setDefaultHttpFields({withCredentials: true});
 
     /**
+     * HTTP Interceptor which asks the user to authenticate if
+     * trying to access a restricted view.
+     * TODO: Make it work!
+     * */
+    //$httpProvider.interceptors.push(function ($q, $timeout, $injector) {
+    //    var loginModal,
+    //        $http,
+    //        $state;
+    //
+    //    // Avoid `Uncaught Error: [$injector:cdep] Circular dependency found`
+    //    $timeout(function() {
+    //        loginModal = $injector.get('AuthenticationService').modal;
+    //        $http = $injector.get('$http');
+    //        $state = $injector.get('$state');
+    //    });
+    //
+    //    return {
+    //        responseError: function(reason) {
+    //            if (reason.staus != 401) {
+    //                return $q.reject(reason);
+    //            }
+    //
+    //            var deferred = $q.defer();
+    //
+    //            loginModal().then(function() {
+    //                deferred.resolve($http(reason.config));
+    //            }).catch(function() {
+    //                $state.go('app.map');
+    //                deferred.reject(reason);
+    //            });
+    //
+    //            return deferred.promise();
+    //        }
+    //    };
+    //});
+
+    /**
      * Routing
      * */
     $urlRouterProvider.otherwise('/dashboard');
     $stateProvider
-        .state('/dashboard', {
+        .state('welcome', {
+            url: '/welcome',
+            data: {
+                requiredLogin: false
+            }
+        })
+        .state('app', {
+            abstract: true,
+            data: {
+                requireLogin: true
+            }
+        })
+        .state('app.dashboard', {
             url: '/dashboard'
-            //templateUrl: 'templates/dashboard/dashboard.html'
         })
-        .state('/login', {
-            url: '/login'
+        .state('app.login', {
+            url: '/auth/login',
+            data: {
+                requiredLogin: false
+            }
         })
-        .state('/logout', {
-            url: '/logout'
+        .state('app.logout', {
+            url: '/auth/logout'
         });
+
+}).run(function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
+
+    Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
+
+    /**
+     * Listen in to the $stateChangeStart event and check if user is
+     * authorized for the requested state change. If not; redirect to
+     * the login state.
+     * */
+    $rootScope.$on('$stateChangeStart', function (e, toState, toParams) {
+        if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
+            e.preventDefault();
+            //$state.go('app.login');
+        }
+    });
+
+    /**
+     * If user is authenticated, set the JWT token in the request header
+     * on all Restangular requests.
+     * */
+    Restangular.addFullRequestInterceptor(function (element, operation, route, url, headers, params) {
+        if (AuthenticationService.isAuthenticated()) {
+            headers.Authorization = 'JWT ' + AuthenticationService.getToken();
+        }
+    });
 
 }).constant('version', require('../../package.json').version);
 

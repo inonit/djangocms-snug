@@ -26,12 +26,16 @@ module.controller('LoginController', ['$scope', 'AuthenticationService', require
 /**
  * Services
  * */
-module.service('AuthenticationService', [require('./services/AuthenticationService')]);
-module.service('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
-module.service('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
-module.service('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
+module.factory('AuthenticationService', [
+    '$timeout', 'AuthenticationStore', 'APITokenAuthService'
+    ,'APITokenRefreshService', 'APITokenVerifyService',
+    require('./services/AuthenticationService')]);
+module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
+module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
+module.factory('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
+module.factory('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
 
-},{"./controllers/LoginController":1,"./services/APITokenAuthService":3,"./services/APITokenRefreshService":4,"./services/APITokenVerifyService":5,"./services/AuthenticationService":6,"angular":18}],3:[function(require,module,exports){
+},{"./controllers/LoginController":1,"./services/APITokenAuthService":3,"./services/APITokenRefreshService":4,"./services/APITokenVerifyService":5,"./services/AuthenticationService":6,"./services/AuthenticationStore":7,"angular":20}],3:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-auth/ endpoint.
@@ -69,16 +73,69 @@ module.exports = function (Restangular) {
 
 },{}],6:[function(require,module,exports){
 /**
- * JWT Authentication service for djangocms-snug.
+ * Authentication service for djangocms-snug.
  */
 
 'use strict';
 
-module.exports = function () {
+module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
+                           APITokenRefreshService, APITokenVerifyService) {
 
+    var Authorize = function (token) {
+        AuthenticationStore.set('token', token);
+    };
+    var DeAuthorize = function () {
+        AuthenticationStore.remove('token');
+    };
+
+    return {
+        login: function (credentials) {
+            return APITokenAuthService.post(credentials).then(function (response) {
+                Authorize(response.token);
+            });
+        },
+        logout: function () {
+            return $timeout(DeAuthorize, 0, true);
+        },
+        refresh: function (token) {
+            APITokenRefreshService.post({
+                token: token
+            }).then(function (response) {
+                Authorize(response.token);
+            });
+        },
+        getToken: function () {
+            return AuthenticationStore.get('token');
+        },
+        isAuthenticated: function () {
+            return AuthenticationStore.get('token') ? true : false
+        },
+        isValid: function () {
+            var token = AuthenticationStore.get('token');
+            if (token) {
+                APITokenVerifyService.post({
+                    token: token
+                }).then(function (response) {
+                    return true;
+                });
+            }
+            return false;
+        }
+    }
 };
 
 },{}],7:[function(require,module,exports){
+/**
+ * Namespaced storage for authentication purposes.
+ */
+
+'use strict';
+
+module.exports = function (store) {
+    return store.getNamespacedStore('auth');
+};
+
+},{}],8:[function(require,module,exports){
 /**
  * Main App Controller
  */
@@ -180,7 +237,7 @@ module.exports = function ($scope, $mdBottomSheet, $mdSidenav, $mdDialog) {
     };
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  *
  */
@@ -232,7 +289,7 @@ module.exports = function ($timeout, $q) {
     }
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  *
  */
@@ -251,7 +308,7 @@ module.exports = function ($scope, $mdDialog) {
     };
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  *
  */
@@ -279,7 +336,7 @@ module.exports = function ($scope, $mdBottomSheet) {
     };
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * Index file for the dashboard module.
  */
@@ -296,7 +353,7 @@ module.controller('DemoController', ['$timeout', '$q', require('./controllers/De
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
 
-},{"./controllers/AppController":7,"./controllers/DemoController":8,"./controllers/DialogController":9,"./controllers/ListBottomSheetController":10,"angular":18}],12:[function(require,module,exports){
+},{"./controllers/AppController":8,"./controllers/DemoController":9,"./controllers/DialogController":10,"./controllers/ListBottomSheetController":11,"angular":20}],13:[function(require,module,exports){
 /**
  * Main file for bootstrapping the djangocms-snug application
  */
@@ -309,17 +366,14 @@ var angular = require('angular'),
     ngMaterial = require('angular.material'),
     lodash = require('lodash'),
     restangular = require('restangular'),
+    storage = require("angular.storage"),
     uiRouter = require('ui.router');
 
 
 var App = angular.module('App', [
-    'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
+    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
 
-]).run(["$rootScope", "$cookies", "Restangular", function ($rootScope, $cookies, Restangular) {
-
-    Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
-
-}]).config(["$httpProvider", "$stateProvider", "$urlRouterProvider", "$mdThemingProvider", "$mdIconProvider", "RestangularProvider", function ($httpProvider, $stateProvider, $urlRouterProvider,
+]).config(["$httpProvider", "$stateProvider", "$urlRouterProvider", "$mdThemingProvider", "$mdIconProvider", "RestangularProvider", function ($httpProvider, $stateProvider, $urlRouterProvider,
                     $mdThemingProvider, $mdIconProvider, RestangularProvider) {
 
     /**
@@ -376,20 +430,97 @@ var App = angular.module('App', [
     RestangularProvider.setDefaultHttpFields({withCredentials: true});
 
     /**
+     * HTTP Interceptor which asks the user to authenticate if
+     * trying to access a restricted view.
+     * TODO: Make it work!
+     * */
+    //$httpProvider.interceptors.push(function ($q, $timeout, $injector) {
+    //    var loginModal,
+    //        $http,
+    //        $state;
+    //
+    //    // Avoid `Uncaught Error: [$injector:cdep] Circular dependency found`
+    //    $timeout(function() {
+    //        loginModal = $injector.get('AuthenticationService').modal;
+    //        $http = $injector.get('$http');
+    //        $state = $injector.get('$state');
+    //    });
+    //
+    //    return {
+    //        responseError: function(reason) {
+    //            if (reason.staus != 401) {
+    //                return $q.reject(reason);
+    //            }
+    //
+    //            var deferred = $q.defer();
+    //
+    //            loginModal().then(function() {
+    //                deferred.resolve($http(reason.config));
+    //            }).catch(function() {
+    //                $state.go('app.map');
+    //                deferred.reject(reason);
+    //            });
+    //
+    //            return deferred.promise();
+    //        }
+    //    };
+    //});
+
+    /**
      * Routing
      * */
     $urlRouterProvider.otherwise('/dashboard');
     $stateProvider
-        .state('/dashboard', {
+        .state('welcome', {
+            url: '/welcome',
+            data: {
+                requiredLogin: false
+            }
+        })
+        .state('app', {
+            abstract: true,
+            data: {
+                requireLogin: true
+            }
+        })
+        .state('app.dashboard', {
             url: '/dashboard'
-            //templateUrl: 'templates/dashboard/dashboard.html'
         })
-        .state('/login', {
-            url: '/login'
+        .state('app.login', {
+            url: '/auth/login',
+            data: {
+                requiredLogin: false
+            }
         })
-        .state('/logout', {
-            url: '/logout'
+        .state('app.logout', {
+            url: '/auth/logout'
         });
+
+}]).run(["$rootScope", "$state", "$cookies", "Restangular", "AuthenticationService", function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
+
+    Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
+
+    /**
+     * Listen in to the $stateChangeStart event and check if user is
+     * authorized for the requested state change. If not; redirect to
+     * the login state.
+     * */
+    $rootScope.$on('$stateChangeStart', function (e, toState, toParams) {
+        if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
+            e.preventDefault();
+            //$state.go('app.login');
+        }
+    });
+
+    /**
+     * If user is authenticated, set the JWT token in the request header
+     * on all Restangular requests.
+     * */
+    Restangular.addFullRequestInterceptor(function (element, operation, route, url, headers, params) {
+        if (AuthenticationService.isAuthenticated()) {
+            headers.Authorization = 'JWT ' + AuthenticationService.getToken();
+        }
+    });
 
 }]).constant('version', require('../../package.json').version);
 
@@ -399,7 +530,186 @@ var App = angular.module('App', [
 require('./auth');
 require('./dashboard');
 
-},{"../../package.json":21,"./auth":2,"./dashboard":11,"angular":18,"angular.animate":13,"angular.cookies":15,"angular.material":16,"lodash":19,"restangular":20,"ui.router":17}],13:[function(require,module,exports){
+},{"../../package.json":23,"./auth":2,"./dashboard":12,"angular":20,"angular.animate":15,"angular.cookies":17,"angular.material":18,"angular.storage":14,"lodash":21,"restangular":22,"ui.router":19}],14:[function(require,module,exports){
+(function() {
+
+
+// Create all modules and define dependencies to make sure they exist
+// and are loaded in the correct order to satisfy dependency injection
+// before all nested files are concatenated by Grunt
+
+angular.module('angular-storage',
+    [
+      'angular-storage.store'
+    ]);
+
+angular.module('angular-storage.cookieStorage', [])
+  .service('cookieStorage', ["$injector", function ($injector) {
+    var $cookieStore = $injector.get('$cookieStore');
+
+    this.set = function (what, value) {
+      return $cookieStore.put(what, value);
+    };
+
+    this.get = function (what) {
+      return $cookieStore.get(what);
+    };
+
+    this.remove = function (what) {
+      return $cookieStore.remove(what);
+    };
+  }]);
+
+angular.module('angular-storage.internalStore', ['angular-storage.localStorage', 'angular-storage.sessionStorage'])
+  .factory('InternalStore', ["$log", "$injector", function($log, $injector) {
+
+    function InternalStore(namespace, storage, delimiter) {
+      this.namespace = namespace || null;
+      this.delimiter = delimiter || '.';
+      this.inMemoryCache = {};
+      this.storage = $injector.get(storage || 'localStorage');
+    }
+
+    InternalStore.prototype.getNamespacedKey = function(key) {
+      if (!this.namespace) {
+        return key;
+      } else {
+        return [this.namespace, key].join(this.delimiter);
+      }
+    };
+
+    InternalStore.prototype.set = function(name, elem) {
+      this.inMemoryCache[name] = elem;
+      this.storage.set(this.getNamespacedKey(name), JSON.stringify(elem));
+    };
+
+    InternalStore.prototype.get = function(name) {
+      var obj = null;
+      if (name in this.inMemoryCache) {
+        return this.inMemoryCache[name];
+      }
+      var saved = this.storage.get(this.getNamespacedKey(name));
+      try {
+
+        if (typeof saved === 'undefined' || saved === 'undefined') {
+          obj = undefined;
+        } else {
+          obj = JSON.parse(saved);
+        }
+
+        this.inMemoryCache[name] = obj;
+      } catch(e) {
+        $log.error('Error parsing saved value', e);
+        this.remove(name);
+      }
+      return obj;
+    };
+
+    InternalStore.prototype.remove = function(name) {
+      this.inMemoryCache[name] = null;
+      this.storage.remove(this.getNamespacedKey(name));
+    };
+
+    return InternalStore;
+  }]);
+
+
+angular.module('angular-storage.localStorage', ['angular-storage.cookieStorage'])
+  .service('localStorage', ["$window", "$injector", function ($window, $injector) {
+    var localStorageAvailable;
+
+    try {
+      $window.localStorage.setItem('testKey', 'test');
+      $window.localStorage.removeItem('testKey');
+      localStorageAvailable = true;
+    } catch(e) {
+      localStorageAvailable = false;
+    }
+
+    if (localStorageAvailable) {
+      this.set = function (what, value) {
+        return $window.localStorage.setItem(what, value);
+      };
+
+      this.get = function (what) {
+        return $window.localStorage.getItem(what);
+      };
+
+      this.remove = function (what) {
+        return $window.localStorage.removeItem(what);
+      };
+    } else {
+      var cookieStorage = $injector.get('cookieStorage');
+
+      this.set = cookieStorage.set;
+      this.get = cookieStorage.get;
+      this.remove = cookieStorage.remove;
+    }
+  }]);
+
+angular.module('angular-storage.sessionStorage', ['angular-storage.cookieStorage'])
+  .service('sessionStorage', ["$window", "$injector", function ($window, $injector) {
+    if ($window.sessionStorage) {
+      this.set = function (what, value) {
+        return $window.sessionStorage.setItem(what, value);
+      };
+
+      this.get = function (what) {
+        return $window.sessionStorage.getItem(what);
+      };
+
+      this.remove = function (what) {
+        return $window.sessionStorage.removeItem(what);
+      };
+    } else {
+      var cookieStorage = $injector.get('cookieStorage');
+
+      this.set = cookieStorage.set;
+      this.get = cookieStorage.get;
+      this.remove = cookieStorage.remove;
+    }
+  }]);
+
+angular.module('angular-storage.store', ['angular-storage.internalStore'])
+  .provider('store', function() {
+
+    // the default storage
+    var _storage = 'localStorage';
+
+    /**
+     * Sets the storage.
+     *
+     * @param {String} storage The storage name
+     */
+    this.setStore = function(storage) {
+      if (storage && angular.isString(storage)) {
+        _storage = storage;
+      }
+    };
+
+    this.$get = ["InternalStore", function(InternalStore) {
+      var store = new InternalStore(null, _storage);
+
+      /**
+       * Returns a namespaced store
+       *
+       * @param {String} namespace The namespace
+       * @param {String} storage The name of the storage service
+       * @param {String} key The key
+       * @returns {InternalStore}
+       */
+      store.getNamespacedStore = function(namespace, storage, key) {
+        return new InternalStore(namespace, storage, key);
+      };
+
+      return store;
+    }];
+  });
+
+
+}());
+
+},{}],15:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4186,7 +4496,7 @@ angular.module('ngAnimate', [])
 
 })(window, window.angular);
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4581,7 +4891,7 @@ ngAriaModule.directive('ngShow', ['$aria', function($aria) {
 
 })(window, window.angular);
 
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4904,7 +5214,7 @@ angular.module('ngCookies').provider('$$cookieWriter', function $$CookieWriterPr
 
 })(window, window.angular);
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (global){
 
 ; require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js");
@@ -22083,7 +22393,7 @@ angular.module("material.core").constant("$MD_THEME_CSS", "/* mixin definition ;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":13,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":14}],17:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":15,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":16}],19:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.15
@@ -26455,7 +26765,7 @@ angular.module('ui.router.state')
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -55069,7 +55379,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -67431,7 +67741,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],20:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function (global){
 
 ; _ = global._ = require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js");
@@ -68798,7 +69108,7 @@ restangular.provider('Restangular', function() {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":19}],21:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":21}],23:[function(require,module,exports){
 module.exports={
   "name": "djangocms-snug",
   "version": "0.0.1",
@@ -68828,6 +69138,7 @@ module.exports={
     "angular.aria": "./bower_components/angular-aria/angular-aria.js",
     "angular.cookies": "./bower_components/angular-cookies/angular-cookies.js",
     "angular.material": "./bower_components/angular-material/angular-material.js",
+    "angular.storage": "./bower_components/a0-angular-storage/dist/angular-storage.js",
     "restangular": "./bower_components/restangular/dist/restangular.js",
     "lodash": "./bower_components/lodash/lodash.js",
     "ui.router": "./bower_components/angular-ui-router/release/angular-ui-router.js"
@@ -68860,7 +69171,7 @@ module.exports={
   }
 }
 
-},{}]},{},[12])
+},{}]},{},[13])
 
 
 //# sourceMappingURL=app.js.map

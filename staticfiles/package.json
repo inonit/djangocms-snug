@@ -27,6 +27,7 @@
     "angular.aria": "./bower_components/angular-aria/angular-aria.js",
     "angular.cookies": "./bower_components/angular-cookies/angular-cookies.js",
     "angular.material": "./bower_components/angular-material/angular-material.js",
+    "angular.storage": "./bower_components/a0-angular-storage/dist/angular-storage.js",
     "restangular": "./bower_components/restangular/dist/restangular.js",
     "lodash": "./bower_components/lodash/lodash.js",
     "ui.router": "./bower_components/angular-ui-router/release/angular-ui-router.js"

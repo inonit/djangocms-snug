@@ -14,7 +14,11 @@ module.controller('LoginController', ['$scope', 'AuthenticationService', require
 /**
  * Services
  * */
-module.service('AuthenticationService', [require('./services/AuthenticationService')]);
-module.service('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
-module.service('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
-module.service('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
+module.factory('AuthenticationService', [
+    '$timeout', 'AuthenticationStore', 'APITokenAuthService'
+    ,'APITokenRefreshService', 'APITokenVerifyService',
+    require('./services/AuthenticationService')]);
+module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
+module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
+module.factory('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
+module.factory('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
