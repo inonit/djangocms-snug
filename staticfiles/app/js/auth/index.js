@@ -19,6 +19,8 @@ module.factory('AuthenticationService', [
     '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
     ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
+module.factory('AuthorizationService', ['AuthenticationStore', require('./services/AuthorizationService')]);
+
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
 
 module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);

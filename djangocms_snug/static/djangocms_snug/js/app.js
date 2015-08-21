@@ -59,13 +59,15 @@ module.factory('AuthenticationService', [
     '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
     ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
+module.factory('AuthorizationService', ['AuthenticationStore', require('./services/AuthorizationService')]);
+
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
 
 module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
 module.factory('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
 module.factory('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
 
-},{"./controllers/LoginController":1,"./controllers/LogoutController":2,"./services/APITokenAuthService":4,"./services/APITokenRefreshService":5,"./services/APITokenVerifyService":6,"./services/AuthenticationService":7,"./services/AuthenticationStore":8,"angular":24}],4:[function(require,module,exports){
+},{"./controllers/LoginController":1,"./controllers/LogoutController":2,"./services/APITokenAuthService":4,"./services/APITokenRefreshService":5,"./services/APITokenVerifyService":6,"./services/AuthenticationService":7,"./services/AuthenticationStore":8,"./services/AuthorizationService":9,"angular":25}],4:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-auth/ endpoint.
@@ -146,7 +148,8 @@ module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAut
             return AuthenticationStore.get('payload');
         },
         isTokenExpired: function () {
-            return jwtHelper.isTokenExpired(AuthenticationStore.get('token'));
+            var token = AuthenticationStore.get('token');
+            return token ? jwtHelper.isTokenExpired(token) : true;
         },
         isAuthenticated: function () {
             return AuthenticationStore.get('token') ? true : false
@@ -177,6 +180,45 @@ module.exports = function (store) {
 };
 
 },{}],9:[function(require,module,exports){
+/**
+ * Authorization.
+ * Keep track of user roles, groups and permissions.
+ */
+
+'use strict';
+
+module.exports = function (AuthenticationStore) {
+    var payload = AuthenticationStore.get('payload');
+    return {
+        groups: function () {
+            return payload ? payload.groups : [];
+        },
+        isSuperuser: function () {
+            return payload ? payload.is_superuser : false;
+        },
+        isStaff: function () {
+            return payload ? payload.is_staff : false;
+        },
+        inGroup: function (group) {
+            if (!payload) {
+                return false;
+            }
+            return _.any(payload.groups, 'name', group);
+        },
+        hasPerm: function (codename) {
+            if (!payload) {
+                return false;
+            }
+            var permissions = _.map(payload.groups, function(group) {
+                return _.any(group.permissions, 'codename', codename);
+            });
+            permissions.push(_.any(payload.user_permissions, 'codename', codename));
+            return permissions.indexOf(true) > -1;
+        }
+    }
+};
+
+},{}],10:[function(require,module,exports){
 /**
  * DashboardController
  */
@@ -278,7 +320,7 @@ module.exports = function ($scope, $mdBottomSheet, $mdSidenav, $mdDialog) {
     };
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  *
  */
@@ -330,7 +372,7 @@ module.exports = function ($timeout, $q) {
     }
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  *
  */
@@ -349,7 +391,7 @@ module.exports = function ($scope, $mdDialog) {
     };
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /**
  *
  */
@@ -377,7 +419,7 @@ module.exports = function ($scope, $mdBottomSheet) {
     };
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * SidenavController
  */
@@ -388,7 +430,7 @@ module.exports = function ($scope) {
 
 };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /**
  * ToolbarController
  */
@@ -421,7 +463,7 @@ module.exports = function ($rootScope, $scope, $mdSidenav, $mdDialog) {
     };
 };
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /**
  * Index file for the dashboard module.
  */
@@ -442,7 +484,7 @@ module.controller('DemoController', ['$timeout', '$q', require('./controllers/De
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
 
-},{"./controllers/DashboardController":9,"./controllers/DemoController":10,"./controllers/DialogController":11,"./controllers/ListBottomSheetController":12,"./controllers/SidenavController":13,"./controllers/ToolbarController":14,"angular":24}],16:[function(require,module,exports){
+},{"./controllers/DashboardController":10,"./controllers/DemoController":11,"./controllers/DialogController":12,"./controllers/ListBottomSheetController":13,"./controllers/SidenavController":14,"./controllers/ToolbarController":15,"angular":25}],17:[function(require,module,exports){
 /**
  * Main file for bootstrapping the djangocms-snug application
  */
@@ -625,7 +667,7 @@ var App = angular.module('App', [
             templateUrl: 'auth/templates/logout.html'
         });
 
-}]).run(["$rootScope", "$state", "$cookies", "Restangular", "AuthenticationService", function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
+}]).run(["$rootScope", "$state", "$cookies", "Restangular", "AuthenticationService", "AuthorizationService", function ($rootScope, $state, $cookies, Restangular, AuthenticationService, AuthorizationService) {
 
     Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
 
@@ -635,12 +677,13 @@ var App = angular.module('App', [
      * the login state.
      * */
     $rootScope.$on('$stateChangeStart', function (e, toState) {
-        var isAuthenticated = AuthenticationService.isAuthenticated(),
-            payload = AuthenticationService.getTokenPayload();
+        var payload = AuthenticationService.getTokenPayload();
+        var ingroup = AuthorizationService.inGroup('editors');
+        var hasPerm = AuthorizationService.hasPerm('add_page');
 
         if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
-            $state.go('auth.login');
             e.preventDefault();
+            $state.go('auth.login');
         }
     });
 
@@ -662,7 +705,7 @@ var App = angular.module('App', [
 require('./auth');
 require('./dashboard');
 
-},{"../../package.json":27,"./auth":3,"./dashboard":15,"angular":24,"angular.animate":18,"angular.cookies":20,"angular.jwt":21,"angular.material":22,"angular.storage":17,"lodash":25,"restangular":26,"ui.router":23}],17:[function(require,module,exports){
+},{"../../package.json":28,"./auth":3,"./dashboard":16,"angular":25,"angular.animate":19,"angular.cookies":21,"angular.jwt":22,"angular.material":23,"angular.storage":18,"lodash":26,"restangular":27,"ui.router":24}],18:[function(require,module,exports){
 (function() {
 
 
@@ -841,7 +884,7 @@ angular.module('angular-storage.store', ['angular-storage.internalStore'])
 
 }());
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4628,7 +4671,7 @@ angular.module('ngAnimate', [])
 
 })(window, window.angular);
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -5023,7 +5066,7 @@ ngAriaModule.directive('ngShow', ['$aria', function($aria) {
 
 })(window, window.angular);
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -5346,7 +5389,7 @@ angular.module('ngCookies').provider('$$cookieWriter', function $$CookieWriterPr
 
 })(window, window.angular);
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function() {
 
 
@@ -5480,7 +5523,7 @@ angular.module('angular-jwt',
 
 }());
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 (function (global){
 
 ; require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js");
@@ -22659,7 +22702,7 @@ angular.module("material.core").constant("$MD_THEME_CSS", "/* mixin definition ;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":18,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":19}],23:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":19,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":20}],24:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.15
@@ -27031,7 +27074,7 @@ angular.module('ui.router.state')
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -55645,7 +55688,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -68007,7 +68050,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 (function (global){
 
 ; _ = global._ = require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js");
@@ -69374,7 +69417,7 @@ restangular.provider('Restangular', function() {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":25}],27:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":26}],28:[function(require,module,exports){
 module.exports={
   "name": "djangocms-snug",
   "version": "0.0.1",
@@ -69439,7 +69482,7 @@ module.exports={
   }
 }
 
-},{}]},{},[16])
+},{}]},{},[17])
 
 
 //# sourceMappingURL=app.js.map

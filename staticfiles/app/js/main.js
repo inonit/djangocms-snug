@@ -180,7 +180,7 @@ var App = angular.module('App', [
             templateUrl: 'auth/templates/logout.html'
         });
 
-}).run(function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
+}).run(function ($rootScope, $state, $cookies, Restangular, AuthenticationService, AuthorizationService) {
 
     Restangular.setDefaultHeaders({"X-CSRFToken": $cookies['csrftoken']});
 
@@ -190,12 +190,13 @@ var App = angular.module('App', [
      * the login state.
      * */
     $rootScope.$on('$stateChangeStart', function (e, toState) {
-        var isAuthenticated = AuthenticationService.isAuthenticated(),
-            payload = AuthenticationService.getTokenPayload();
+        var payload = AuthenticationService.getTokenPayload();
+        var ingroup = AuthorizationService.inGroup('editors');
+        var hasPerm = AuthorizationService.hasPerm('add_page');
 
         if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
-            $state.go('auth.login');
             e.preventDefault();
+            $state.go('auth.login');
         }
     });
 

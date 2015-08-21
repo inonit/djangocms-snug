@@ -42,7 +42,8 @@ module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAut
             return AuthenticationStore.get('payload');
         },
         isTokenExpired: function () {
-            return jwtHelper.isTokenExpired(AuthenticationStore.get('token'));
+            var token = AuthenticationStore.get('token');
+            return token ? jwtHelper.isTokenExpired(token) : true;
         },
         isAuthenticated: function () {
             return AuthenticationStore.get('token') ? true : false
