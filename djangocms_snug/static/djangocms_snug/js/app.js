@@ -12,16 +12,32 @@ module.exports = function($scope, $state, AuthenticationService) {
     };
 
     $scope.submit = function(credentials) {
-        console.log(credentials);
-        AuthenticationService.login(credentials).then(function() {
-            $state.go('app.dashboard');
-        }, function(reason) {
-            console.log(reason);
-        });
+        if (_.valuesIn(credentials)) {
+            AuthenticationService.login(credentials).then(function() {
+                $state.go('dashboard.overview');
+            }, function(reason) {
+                console.log(reason);
+            });
+        }
     };
 };
 
 },{}],2:[function(require,module,exports){
+/**
+ * Handle logout
+ */
+
+'use strict';
+
+module.exports = function ($scope, $state, AuthenticationService) {
+    $scope.submit = function(state) {
+        AuthenticationService.logout().then(function () {
+            $state.go(state);
+        });
+    }
+};
+
+},{}],3:[function(require,module,exports){
 /**
  * Index file for the auth module.
  */
@@ -34,6 +50,7 @@ var module = require('angular').module('App');
  * Controllers
  * */
 module.controller('LoginController', ['$scope', '$state', 'AuthenticationService', require('./controllers/LoginController')]);
+module.controller('LogoutController', ['$scope', '$state', 'AuthenticationService', require('./controllers/LogoutController')]);
 
 /**
  * Services
@@ -43,11 +60,12 @@ module.factory('AuthenticationService', [
     ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
+
 module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
 module.factory('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
 module.factory('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
 
-},{"./controllers/LoginController":1,"./services/APITokenAuthService":3,"./services/APITokenRefreshService":4,"./services/APITokenVerifyService":5,"./services/AuthenticationService":6,"./services/AuthenticationStore":7,"angular":20}],3:[function(require,module,exports){
+},{"./controllers/LoginController":1,"./controllers/LogoutController":2,"./services/APITokenAuthService":4,"./services/APITokenRefreshService":5,"./services/APITokenVerifyService":6,"./services/AuthenticationService":7,"./services/AuthenticationStore":8,"angular":23}],4:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-auth/ endpoint.
@@ -59,7 +77,7 @@ module.exports = function (Restangular) {
     return Restangular.service('auth/api-token-auth');
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-refresh/ endpoint.
@@ -71,7 +89,7 @@ module.exports = function (Restangular) {
     return Restangular.service('auth/api-token-refresh');
 };
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-verify/ endpoint.
@@ -83,7 +101,7 @@ module.exports = function (Restangular) {
     return Restangular.service('auth/api-token-verify');
 };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * Authentication service for djangocms-snug.
  */
@@ -136,7 +154,7 @@ module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
     }
 };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * Namespaced storage for authentication purposes.
  */
@@ -147,9 +165,9 @@ module.exports = function (store) {
     return store.getNamespacedStore('auth');
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
- * Main App Controller
+ * DashboardController
  */
 
 'use strict';
@@ -249,7 +267,7 @@ module.exports = function ($scope, $mdBottomSheet, $mdSidenav, $mdDialog) {
     };
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  *
  */
@@ -301,7 +319,7 @@ module.exports = function ($timeout, $q) {
     }
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  *
  */
@@ -320,7 +338,7 @@ module.exports = function ($scope, $mdDialog) {
     };
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  *
  */
@@ -348,7 +366,51 @@ module.exports = function ($scope, $mdBottomSheet) {
     };
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
+/**
+ * SidenavController
+ */
+
+'use strict';
+
+module.exports = function ($scope) {
+
+};
+
+},{}],14:[function(require,module,exports){
+/**
+ * ToolbarController
+ */
+
+'use strict';
+
+module.exports = function ($rootScope, $scope, $mdSidenav, $mdDialog) {
+
+    /**
+     * Changes the "showSearch" attribute on $rootScope in order
+     * to let the entire application know if the search controller
+     * is visible or not.
+     * */
+    $scope.toggleSearch = function (element) {
+        $rootScope.showSearch = !$rootScope.showSearch;
+    };
+
+    /**
+     * Toggles the side navigation bar.
+     * */
+    $scope.toggleSidenav = function (menuId) {
+        $mdSidenav(menuId).toggle();
+    };
+
+    /**
+     * Toggles the upper right hand settings menu.
+     * */
+    this.toggleSettingsMenu = function ($mdOpenMenu, event) {
+        $mdOpenMenu(event);
+    };
+};
+
+},{}],15:[function(require,module,exports){
 /**
  * Index file for the dashboard module.
  */
@@ -360,12 +422,16 @@ var module = require('angular').module('App');
 /**
  * Controllers
  * */
-module.controller('AppController', ['$scope', '$mdBottomSheet', '$mdSidenav', '$mdDialog', require('./controllers/AppController')]);
+
+module.controller('ToolbarController', ['$rootScope', '$scope', '$mdSidenav', '$mdDialog', require('./controllers/ToolbarController')]);
+module.controller('SidenavController', ['$scope', require('./controllers/SidenavController')]);
+
+module.controller('DashboardController', ['$scope', '$mdBottomSheet', '$mdSidenav', '$mdDialog', require('./controllers/DashboardController')]);
 module.controller('DemoController', ['$timeout', '$q', require('./controllers/DemoController')]);
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
 
-},{"./controllers/AppController":8,"./controllers/DemoController":9,"./controllers/DialogController":10,"./controllers/ListBottomSheetController":11,"angular":20}],13:[function(require,module,exports){
+},{"./controllers/DashboardController":9,"./controllers/DemoController":10,"./controllers/DialogController":11,"./controllers/ListBottomSheetController":12,"./controllers/SidenavController":13,"./controllers/ToolbarController":14,"angular":23}],16:[function(require,module,exports){
 /**
  * Main file for bootstrapping the djangocms-snug application
  */
@@ -383,8 +449,8 @@ var angular = require('angular'),
 
 
 var App = angular.module('App', [
-    'templates',
-    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
+    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
+    'templates'
 
 ]).config(["$httpProvider", "$stateProvider", "$urlRouterProvider", "$mdThemingProvider", "$mdIconProvider", "RestangularProvider", function ($httpProvider, $stateProvider, $urlRouterProvider,
                     $mdThemingProvider, $mdIconProvider, RestangularProvider) {
@@ -412,9 +478,9 @@ var App = angular.module('App', [
 
     /**
      * Linking to https://github.com/google/material-design-icons/tree/master/sprites/svg-sprite
+     * Preview: https://www.google.com/design/icons/
      * */
     $mdIconProvider
-        //
         .iconSet('action', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-action.svg', 24)
         .iconSet('alert', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-alert.svg', 24)
         .iconSet('av', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-av.svg', 24)
@@ -481,6 +547,9 @@ var App = angular.module('App', [
 
     /**
      * Routing
+     * Good read:
+     *  - https://github.com/angular-ui/ui-router/wiki/Multiple-Named-Views
+     *  - http://engineering.thinknear.com/blog/2015/01/07/advanced-angular-ui-router-part-i/
      * */
     $urlRouterProvider.otherwise('/dashboard');
     $stateProvider
@@ -490,16 +559,38 @@ var App = angular.module('App', [
                 requiredLogin: false
             }
         })
-        .state('app', {
+        .state('dashboard', {
             abstract: true,
-            template: '<ui-view/>',
+            url: '/dashboard',
             data: {
-                requireLogin: true
+                requiredLogin: true
+            },
+            views: {
+                'sidenav@': {
+                    controller: 'SidenavController as ctrl',
+                    templateUrl: 'dashboard/templates/dashboard.sidenav.html'
+                },
+                'toolbar@': {
+                    controller: 'ToolbarController as ctrl',
+                    templateUrl: 'dashboard/templates/dashboard.toolbar.html'
+                }
             }
         })
-        .state('app.dashboard', {
-            url: '/dashboard',
-            templateUrl: 'dashboard/templates/dashboard.html'
+        .state('dashboard.overview', {
+            url: '',
+            views: {
+                '@': {
+                    templateUrl: 'dashboard/templates/overview.html'
+                }
+            }
+        })
+        .state('dashboard.user-profile', {
+            url: '/user-profile',
+            views: {
+                '@': {
+                    templateUrl: 'dashboard/templates/user-profile.html'
+                }
+            }
         })
         .state('auth', {
             abstract: true,
@@ -517,7 +608,9 @@ var App = angular.module('App', [
             }
         })
         .state('auth.logout', {
-            url: '/auth/logout'
+            url: '/auth/logout',
+            controller: 'LogoutController as ctrl',
+            templateUrl: 'auth/templates/logout.html'
         });
 
 }]).run(["$rootScope", "$state", "$cookies", "Restangular", "AuthenticationService", function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
@@ -554,7 +647,7 @@ var App = angular.module('App', [
 require('./auth');
 require('./dashboard');
 
-},{"../../package.json":23,"./auth":2,"./dashboard":12,"angular":20,"angular.animate":15,"angular.cookies":17,"angular.material":18,"angular.storage":14,"lodash":21,"restangular":22,"ui.router":19}],14:[function(require,module,exports){
+},{"../../package.json":26,"./auth":3,"./dashboard":15,"angular":23,"angular.animate":18,"angular.cookies":20,"angular.material":21,"angular.storage":17,"lodash":24,"restangular":25,"ui.router":22}],17:[function(require,module,exports){
 (function() {
 
 
@@ -733,7 +826,7 @@ angular.module('angular-storage.store', ['angular-storage.internalStore'])
 
 }());
 
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4520,7 +4613,7 @@ angular.module('ngAnimate', [])
 
 })(window, window.angular);
 
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -4915,7 +5008,7 @@ ngAriaModule.directive('ngShow', ['$aria', function($aria) {
 
 })(window, window.angular);
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /**
  * @license AngularJS v1.4.4
  * (c) 2010-2015 Google, Inc. http://angularjs.org
@@ -5238,7 +5331,7 @@ angular.module('ngCookies').provider('$$cookieWriter', function $$CookieWriterPr
 
 })(window, window.angular);
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 (function (global){
 
 ; require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js");
@@ -22417,7 +22510,7 @@ angular.module("material.core").constant("$MD_THEME_CSS", "/* mixin definition ;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":15,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":16}],19:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":18,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":19}],22:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.15
@@ -26789,7 +26882,7 @@ angular.module('ui.router.state')
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
 
-},{}],20:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -55403,7 +55496,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -67765,7 +67858,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],22:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (global){
 
 ; _ = global._ = require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js");
@@ -69132,7 +69225,7 @@ restangular.provider('Restangular', function() {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":21}],23:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":24}],26:[function(require,module,exports){
 module.exports={
   "name": "djangocms-snug",
   "version": "0.0.1",
@@ -69196,7 +69289,7 @@ module.exports={
   }
 }
 
-},{}]},{},[13])
+},{}]},{},[16])
 
 
 //# sourceMappingURL=app.js.map

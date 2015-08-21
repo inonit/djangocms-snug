@@ -9,5 +9,5 @@ class DashboardView(TemplateView):
     """
     View for rendering a test view
     """
-    template_name = "djangocms_snug/base.html"
+    template_name = "djangocms_snug/index.html"
 

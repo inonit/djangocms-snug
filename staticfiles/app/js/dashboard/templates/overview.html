@@ -1,0 +1,87 @@
+<md-toolbar class="animate-show md-whiteframe-z1" ng-show="!showSearch">
+    <span flex></span>
+    <md-tabs md-stretch-tabs="always" md-selected="data.selectedIndex">
+        <md-tab id="tab1" aria-controls="tab1-content">
+            Latest
+        </md-tab>
+        <md-tab id="tab2" aria-controls="tab2-content">
+            Favorites
+        </md-tab>
+    </md-tabs>
+</md-toolbar>
+<div layout="column" layout-padding>
+    <div class="inset" hide-sm></div>
+    <ng-switch on="data.selectedIndex" class="tabpanel-container">
+        <div role="tabpanel"
+             id="tab1-content"
+             aria-labelledby="tab1"
+             ng-switch-when="0"
+             md-swipe-left="next()"
+             md-swipe-right="previous()"
+             layout="row" layout-align="center center">
+            <div flex-gt-sm="90" flex-gt-md="80">
+                <h2 class="md-title inset">Latest Activity</h2>
+                <md-card>
+                    <md-list>
+                        <md-list-item class="md-3-line" ng-repeat="item in activity | filter:search">
+                            <md-icon class="md-avatar" hide-sm
+                                     md-svg-icon="avatars:{{ item.avatar }}"></md-icon>
+                            <div class="md-list-item-text">
+                                <h3>{{ item.what }}</h3>
+                                <h4>{{ item.who }}</h4>
+
+                                <p>{{ item.notes }}</p>
+                            </div>
+                            <md-divider md-inset hide-sm ng-if="!$last"></md-divider>
+                            <md-divider hide-gt-sm ng-if="!$last"></md-divider>
+                        </md-list-item>
+                        <md-divider></md-divider>
+                        <md-list-item>
+                            <md-button class="md-primary">
+                                <md-icon md-svg-icon="navigation:ic_arrow_forward_24px"
+                                         aria-label="Forward"></md-icon>
+                                <span>More</span>
+                            </md-button>
+                        </md-list-item>
+                    </md-list>
+                </md-card>
+            </div>
+        </div>
+        <div role="tabpanel"
+             id="tab2-content"
+             aria-labelledby="tab2"
+             ng-switch-when="1"
+             md-swipe-left="next()"
+             md-swipe-right="previous()"
+             layout="row" layout-align="center center">
+            <div flex-gt-sm="90" flex-gt-md="80">
+                <h2 class="md-title inset">Favorites</h2>
+                <md-card>
+                    <md-list>
+                        <md-list-item class="md-3-line"
+                                      ng-repeat="item in activity | filter:search | orderBy:'-what'">
+                            <md-icon class="md-avatar" hide-sm
+                                     md-svg-icon="avatars:{{ item.avatar }}"></md-icon>
+                            <div class="md-list-item-text">
+                                <h3>{{ item.what }}</h3>
+                                <h4>{{ item.who }}</h4>
+
+                                <p>{{ item.notes }}</p>
+                            </div>
+                            <md-divider md-inset hide-sm ng-if="!$last"></md-divider>
+                            <md-divider hide-gt-sm ng-if="!$last"></md-divider>
+                        </md-list-item>
+                        <md-divider></md-divider>
+                        <md-list-item>
+                            <md-button class="md-primary">
+                                <md-icon md-svg-icon="navigation:ic_arrow_forward_24px"
+                                         aria-label="Forward"></md-icon>
+                                <span>More</span>
+                            </md-button>
+                        </md-list-item>
+                    </md-list>
+                </md-card>
+            </div>
+        </div>
+    </ng-switch>
+</div>

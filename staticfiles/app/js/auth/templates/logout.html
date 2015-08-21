@@ -1,0 +1,18 @@
+<section layout="row" flex>
+    <md-content flex>
+        <ui-view layout="column" layout-fill layout-padding>
+            <div layout="row" layout-align="center center">
+                <div flex-gt-sm="90" flex-gt-md="40">
+                    <span layout="row" layout-align="center center">
+                        <md-button ng-click="submit('dashboard.overview')" class="md-primary">
+                            <span>No, take me back!</span>
+                        </md-button>
+                        <md-button ng-click="submit('welcome')" class="md-primary">
+                            <span>Log out</span>
+                        </md-button>
+                    </span>
+                </div>
+            </div>
+        </ui-view>
+    </md-content>
+</section>

@@ -11,11 +11,12 @@ module.exports = function($scope, $state, AuthenticationService) {
     };
 
     $scope.submit = function(credentials) {
-        console.log(credentials);
-        AuthenticationService.login(credentials).then(function() {
-            $state.go('app.dashboard');
-        }, function(reason) {
-            console.log(reason);
-        });
+        if (_.valuesIn(credentials)) {
+            AuthenticationService.login(credentials).then(function() {
+                $state.go('dashboard.overview');
+            }, function(reason) {
+                console.log(reason);
+            });
+        }
     };
 };

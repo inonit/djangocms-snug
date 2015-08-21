@@ -17,7 +17,17 @@
     {% endaddtoblock %}
 </head>
 <body layout="column">
-<section ui-view></section>
+<section layout="row" flex>
+    <div ui-view="sidenav"></div>
+    <div layout="column" class="relative" layout-fill role="main">
+        <div ui-view="toolbar"></div>
+        <md-content flex>
+            <div ui-view layout="column" layout-fill>
+                <!-- Placeholder for child content -->
+            </div>
+        </md-content>
+    </div>
+</section>
 {% render_block "js" %}
 {% addtoblock "js" %}
     <script type="application/javascript" src="{% static "djangocms_snug/js/app.js" %}"></script>

@@ -1,5 +1,5 @@
 /**
- * Main App Controller
+ * DashboardController
  */
 
 'use strict';

@@ -15,8 +15,8 @@ var angular = require('angular'),
 
 
 var App = angular.module('App', [
-    'templates',
-    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular'
+    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
+    'templates'
 
 ]).config(function ($httpProvider, $stateProvider, $urlRouterProvider,
                     $mdThemingProvider, $mdIconProvider, RestangularProvider) {
@@ -44,9 +44,9 @@ var App = angular.module('App', [
 
     /**
      * Linking to https://github.com/google/material-design-icons/tree/master/sprites/svg-sprite
+     * Preview: https://www.google.com/design/icons/
      * */
     $mdIconProvider
-        //
         .iconSet('action', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-action.svg', 24)
         .iconSet('alert', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-alert.svg', 24)
         .iconSet('av', 'https://raw.githubusercontent.com/google/material-design-icons/master/sprites/svg-sprite/svg-sprite-av.svg', 24)
@@ -113,6 +113,9 @@ var App = angular.module('App', [
 
     /**
      * Routing
+     * Good read:
+     *  - https://github.com/angular-ui/ui-router/wiki/Multiple-Named-Views
+     *  - http://engineering.thinknear.com/blog/2015/01/07/advanced-angular-ui-router-part-i/
      * */
     $urlRouterProvider.otherwise('/dashboard');
     $stateProvider
@@ -122,16 +125,38 @@ var App = angular.module('App', [
                 requiredLogin: false
             }
         })
-        .state('app', {
+        .state('dashboard', {
             abstract: true,
-            template: '<ui-view/>',
+            url: '/dashboard',
             data: {
-                requireLogin: true
+                requiredLogin: true
+            },
+            views: {
+                'sidenav@': {
+                    controller: 'SidenavController as ctrl',
+                    templateUrl: 'dashboard/templates/dashboard.sidenav.html'
+                },
+                'toolbar@': {
+                    controller: 'ToolbarController as ctrl',
+                    templateUrl: 'dashboard/templates/dashboard.toolbar.html'
+                }
             }
         })
-        .state('app.dashboard', {
-            url: '/dashboard',
-            templateUrl: 'dashboard/templates/dashboard.html'
+        .state('dashboard.overview', {
+            url: '',
+            views: {
+                '@': {
+                    templateUrl: 'dashboard/templates/overview.html'
+                }
+            }
+        })
+        .state('dashboard.user-profile', {
+            url: '/user-profile',
+            views: {
+                '@': {
+                    templateUrl: 'dashboard/templates/user-profile.html'
+                }
+            }
         })
         .state('auth', {
             abstract: true,
@@ -149,7 +174,9 @@ var App = angular.module('App', [
             }
         })
         .state('auth.logout', {
-            url: '/auth/logout'
+            url: '/auth/logout',
+            controller: 'LogoutController as ctrl',
+            templateUrl: 'auth/templates/logout.html'
         });
 
 }).run(function ($rootScope, $state, $cookies, Restangular, AuthenticationService) {
