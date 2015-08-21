@@ -7,6 +7,7 @@
 var angular = require('angular'),
     ngAnimate = require('angular.animate'),
     ngCookies = require('angular.cookies'),
+    ngJWT = require('angular.jwt'),
     ngMaterial = require('angular.material'),
     lodash = require('lodash'),
     restangular = require('restangular'),
@@ -15,7 +16,7 @@ var angular = require('angular'),
 
 
 var App = angular.module('App', [
-    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
+    'angular-storage', 'angular-jwt', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
     'templates'
 
 ]).config(function ($httpProvider, $stateProvider, $urlRouterProvider,
@@ -189,9 +190,12 @@ var App = angular.module('App', [
      * the login state.
      * */
     $rootScope.$on('$stateChangeStart', function (e, toState) {
+        var isAuthenticated = AuthenticationService.isAuthenticated(),
+            payload = AuthenticationService.getTokenPayload();
+
         if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
-            e.preventDefault();
             $state.go('auth.login');
+            e.preventDefault();
         }
     });
 

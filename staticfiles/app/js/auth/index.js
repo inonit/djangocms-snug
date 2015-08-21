@@ -16,7 +16,7 @@ module.controller('LogoutController', ['$scope', '$state', 'AuthenticationServic
  * Services
  * */
 module.factory('AuthenticationService', [
-    '$timeout', 'AuthenticationStore', 'APITokenAuthService'
+    '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
     ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);

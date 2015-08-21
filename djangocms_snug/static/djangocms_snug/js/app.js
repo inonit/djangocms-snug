@@ -56,7 +56,7 @@ module.controller('LogoutController', ['$scope', '$state', 'AuthenticationServic
  * Services
  * */
 module.factory('AuthenticationService', [
-    '$timeout', 'AuthenticationStore', 'APITokenAuthService'
+    '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
     ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
@@ -65,7 +65,7 @@ module.factory('APITokenAuthService', ['Restangular', require('./services/APITok
 module.factory('APITokenVerifyService', ['Restangular', require('./services/APITokenVerifyService')]);
 module.factory('APITokenRefreshService', ['Restangular', require('./services/APITokenRefreshService')]);
 
-},{"./controllers/LoginController":1,"./controllers/LogoutController":2,"./services/APITokenAuthService":4,"./services/APITokenRefreshService":5,"./services/APITokenVerifyService":6,"./services/AuthenticationService":7,"./services/AuthenticationStore":8,"angular":23}],4:[function(require,module,exports){
+},{"./controllers/LoginController":1,"./controllers/LogoutController":2,"./services/APITokenAuthService":4,"./services/APITokenRefreshService":5,"./services/APITokenVerifyService":6,"./services/AuthenticationService":7,"./services/AuthenticationStore":8,"angular":24}],4:[function(require,module,exports){
 /**
  * Provides a Restangular service for the
  * /api/auth/api-token-auth/ endpoint.
@@ -108,14 +108,16 @@ module.exports = function (Restangular) {
 
 'use strict';
 
-module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
+module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAuthService,
                            APITokenRefreshService, APITokenVerifyService) {
 
     var Authorize = function (token) {
         AuthenticationStore.set('token', token);
+        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
     };
     var DeAuthorize = function () {
         AuthenticationStore.remove('token');
+        AuthenticationStore.remove('payload');
     };
 
     return {
@@ -136,6 +138,15 @@ module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
         },
         getToken: function () {
             return AuthenticationStore.get('token');
+        },
+        getTokenExpireDate: function () {
+            return jwtHelper.getTokenExpirationDate(AuthenticationStore.get('token'));
+        },
+        getTokenPayload: function () {
+            return AuthenticationStore.get('payload');
+        },
+        isTokenExpired: function () {
+            return jwtHelper.isTokenExpired(AuthenticationStore.get('token'));
         },
         isAuthenticated: function () {
             return AuthenticationStore.get('token') ? true : false
@@ -431,7 +442,7 @@ module.controller('DemoController', ['$timeout', '$q', require('./controllers/De
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
 
-},{"./controllers/DashboardController":9,"./controllers/DemoController":10,"./controllers/DialogController":11,"./controllers/ListBottomSheetController":12,"./controllers/SidenavController":13,"./controllers/ToolbarController":14,"angular":23}],16:[function(require,module,exports){
+},{"./controllers/DashboardController":9,"./controllers/DemoController":10,"./controllers/DialogController":11,"./controllers/ListBottomSheetController":12,"./controllers/SidenavController":13,"./controllers/ToolbarController":14,"angular":24}],16:[function(require,module,exports){
 /**
  * Main file for bootstrapping the djangocms-snug application
  */
@@ -441,6 +452,7 @@ module.controller('DialogController', ['$scope', '$mdDialog', require('./control
 var angular = require('angular'),
     ngAnimate = require('angular.animate'),
     ngCookies = require('angular.cookies'),
+    ngJWT = require('angular.jwt'),
     ngMaterial = require('angular.material'),
     lodash = require('lodash'),
     restangular = require('restangular'),
@@ -449,7 +461,7 @@ var angular = require('angular'),
 
 
 var App = angular.module('App', [
-    'angular-storage', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
+    'angular-storage', 'angular-jwt', 'ngCookies', 'ngMaterial', 'ui.router', 'restangular',
     'templates'
 
 ]).config(["$httpProvider", "$stateProvider", "$urlRouterProvider", "$mdThemingProvider", "$mdIconProvider", "RestangularProvider", function ($httpProvider, $stateProvider, $urlRouterProvider,
@@ -623,9 +635,12 @@ var App = angular.module('App', [
      * the login state.
      * */
     $rootScope.$on('$stateChangeStart', function (e, toState) {
+        var isAuthenticated = AuthenticationService.isAuthenticated(),
+            payload = AuthenticationService.getTokenPayload();
+
         if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
-            e.preventDefault();
             $state.go('auth.login');
+            e.preventDefault();
         }
     });
 
@@ -647,7 +662,7 @@ var App = angular.module('App', [
 require('./auth');
 require('./dashboard');
 
-},{"../../package.json":26,"./auth":3,"./dashboard":15,"angular":23,"angular.animate":18,"angular.cookies":20,"angular.material":21,"angular.storage":17,"lodash":24,"restangular":25,"ui.router":22}],17:[function(require,module,exports){
+},{"../../package.json":27,"./auth":3,"./dashboard":15,"angular":24,"angular.animate":18,"angular.cookies":20,"angular.jwt":21,"angular.material":22,"angular.storage":17,"lodash":25,"restangular":26,"ui.router":23}],17:[function(require,module,exports){
 (function() {
 
 
@@ -5332,6 +5347,140 @@ angular.module('ngCookies').provider('$$cookieWriter', function $$CookieWriterPr
 })(window, window.angular);
 
 },{}],21:[function(require,module,exports){
+(function() {
+
+
+// Create all modules and define dependencies to make sure they exist
+// and are loaded in the correct order to satisfy dependency injection
+// before all nested files are concatenated by Grunt
+
+// Modules
+angular.module('angular-jwt',
+    [
+        'angular-jwt.interceptor',
+        'angular-jwt.jwt'
+    ]);
+
+ angular.module('angular-jwt.interceptor', [])
+  .provider('jwtInterceptor', function() {
+
+    this.urlParam = null;
+    this.authHeader = 'Authorization';
+    this.authPrefix = 'Bearer ';
+    this.tokenGetter = function() {
+      return null;
+    }
+
+    var config = this;
+
+    this.$get = ["$q", "$injector", "$rootScope", function ($q, $injector, $rootScope) {
+      return {
+        request: function (request) {
+          if (request.skipAuthorization) {
+            return request;
+          }
+
+          if (config.urlParam) {
+            request.params = request.params || {};
+            // Already has the token in the url itself
+            if (request.params[config.urlParam]) {
+              return request;
+            }
+          } else {
+            request.headers = request.headers || {};
+            // Already has an Authorization header
+            if (request.headers[config.authHeader]) {
+              return request;
+            }
+          }
+
+          var tokenPromise = $q.when($injector.invoke(config.tokenGetter, this, {
+            config: request
+          }));
+
+          return tokenPromise.then(function(token) {
+            if (token) {
+              if (config.urlParam) {
+                request.params[config.urlParam] = token;
+              } else {
+                request.headers[config.authHeader] = config.authPrefix + token;
+              }
+            }
+            return request;
+          });
+        },
+        responseError: function (response) {
+          // handle the case where the user is not authenticated
+          if (response.status === 401) {
+            $rootScope.$broadcast('unauthenticated', response);
+          }
+          return $q.reject(response);
+        }
+      };
+    }];
+  });
+
+ angular.module('angular-jwt.jwt', [])
+  .service('jwtHelper', function() {
+
+    this.urlBase64Decode = function(str) {
+      var output = str.replace(/-/g, '+').replace(/_/g, '/');
+      switch (output.length % 4) {
+        case 0: { break; }
+        case 2: { output += '=='; break; }
+        case 3: { output += '='; break; }
+        default: {
+          throw 'Illegal base64url string!';
+        }
+      }
+      return decodeURIComponent(escape(window.atob(output))); //polifyll https://github.com/davidchambers/Base64.js
+    }
+
+
+    this.decodeToken = function(token) {
+      var parts = token.split('.');
+
+      if (parts.length !== 3) {
+        throw new Error('JWT must have 3 parts');
+      }
+
+      var decoded = this.urlBase64Decode(parts[1]);
+      if (!decoded) {
+        throw new Error('Cannot decode the token');
+      }
+
+      return JSON.parse(decoded);
+    }
+
+    this.getTokenExpirationDate = function(token) {
+      var decoded;
+      decoded = this.decodeToken(token);
+
+      if(typeof decoded.exp === "undefined") {
+        return null;
+      }
+
+      var d = new Date(0); // The 0 here is the key, which sets the date to the epoch
+      d.setUTCSeconds(decoded.exp);
+
+      return d;
+    };
+
+    this.isTokenExpired = function(token, offsetSeconds) {
+      var d = this.getTokenExpirationDate(token);
+      offsetSeconds = offsetSeconds || 0;
+      if (d === null) {
+        return false;
+      }
+
+      // Token expired?
+      return !(d.valueOf() > (new Date().valueOf() + (offsetSeconds * 1000)));
+    };
+  });
+
+}());
+
+},{}],22:[function(require,module,exports){
 (function (global){
 
 ; require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js");
@@ -22510,7 +22659,7 @@ angular.module("material.core").constant("$MD_THEME_CSS", "/* mixin definition ;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":18,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":19}],22:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-animate/angular-animate.js":18,"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/angular-aria/angular-aria.js":19}],23:[function(require,module,exports){
 /**
  * State-based routing for AngularJS
  * @version v0.2.15
@@ -26882,7 +27031,7 @@ angular.module('ui.router.state')
   .filter('includedByState', $IncludedByStateFilter);
 })(window, window.angular);
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -55496,7 +55645,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (global){
 ; var __browserify_shim_require__=require;(function browserifyShim(module, exports, require, define, browserify_shim__define__module__export__) {
 /**
@@ -67858,7 +68007,7 @@ $provide.value("$locale", {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 (function (global){
 
 ; _ = global._ = require("/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js");
@@ -69225,7 +69374,7 @@ restangular.provider('Restangular', function() {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":24}],26:[function(require,module,exports){
+},{"/Users/rolf/Documents/workspace/djangocms-snug/staticfiles/bower_components/lodash/lodash.js":25}],27:[function(require,module,exports){
 module.exports={
   "name": "djangocms-snug",
   "version": "0.0.1",
@@ -69255,6 +69404,7 @@ module.exports={
     "angular.animate": "./bower_components/angular-animate/angular-animate.js",
     "angular.aria": "./bower_components/angular-aria/angular-aria.js",
     "angular.cookies": "./bower_components/angular-cookies/angular-cookies.js",
+    "angular.jwt": "./bower_components/angular-jwt/dist/angular-jwt.js",
     "angular.material": "./bower_components/angular-material/angular-material.js",
     "angular.storage": "./bower_components/a0-angular-storage/dist/angular-storage.js",
     "restangular": "./bower_components/restangular/dist/restangular.js",

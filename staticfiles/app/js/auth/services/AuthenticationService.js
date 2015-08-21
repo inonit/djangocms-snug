@@ -4,14 +4,16 @@
 
 'use strict';
 
-module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
+module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAuthService,
                            APITokenRefreshService, APITokenVerifyService) {
 
     var Authorize = function (token) {
         AuthenticationStore.set('token', token);
+        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
     };
     var DeAuthorize = function () {
         AuthenticationStore.remove('token');
+        AuthenticationStore.remove('payload');
     };
 
     return {
@@ -32,6 +34,15 @@ module.exports = function ($timeout, AuthenticationStore, APITokenAuthService,
         },
         getToken: function () {
             return AuthenticationStore.get('token');
+        },
+        getTokenExpireDate: function () {
+            return jwtHelper.getTokenExpirationDate(AuthenticationStore.get('token'));
+        },
+        getTokenPayload: function () {
+            return AuthenticationStore.get('payload');
+        },
+        isTokenExpired: function () {
+            return jwtHelper.isTokenExpired(AuthenticationStore.get('token'));
         },
         isAuthenticated: function () {
             return AuthenticationStore.get('token') ? true : false
