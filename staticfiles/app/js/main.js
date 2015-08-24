@@ -130,7 +130,10 @@ var App = angular.module('App', [
             abstract: true,
             url: '/dashboard',
             data: {
-                requiredLogin: true
+                requiredLogin: true,
+                requiredRoles: [
+                    "Staff"
+                ]
             },
             views: {
                 'sidenav@': {
@@ -167,7 +170,7 @@ var App = angular.module('App', [
             }
         })
         .state('auth.login', {
-            url: '/auth/login',
+            url: '/login',
             controller: 'LoginController as ctrl',
             templateUrl: 'auth/templates/login.html',
             data: {
@@ -175,7 +178,7 @@ var App = angular.module('App', [
             }
         })
         .state('auth.logout', {
-            url: '/auth/logout',
+            url: '/logout',
             controller: 'LogoutController as ctrl',
             templateUrl: 'auth/templates/logout.html'
         });
@@ -190,13 +193,24 @@ var App = angular.module('App', [
      * the login state.
      * */
     $rootScope.$on('$stateChangeStart', function (e, toState) {
-        var payload = AuthenticationService.getTokenPayload();
-        var ingroup = AuthorizationService.inGroup('editors');
-        var hasPerm = AuthorizationService.hasPerm('add_page');
 
-        if (toState.data.requireLogin && !AuthenticationService.isAuthenticated()) {
+        if (toState.data.requiredLogin && !AuthenticationService.isAuthenticated()) {
             e.preventDefault();
             $state.go('auth.login');
+        }
+
+        if (toState.data.requiredRoles) {
+            // Make sure the user has all the required roles.
+            var hasRoles = _.map(toState.data.requiredRoles, function(role) {
+                return AuthorizationService.roles().indexOf(role) > -1;
+            });
+
+            if (!hasRoles.every(function(elem) {
+                    return elem === true;
+            })) {
+                e.preventDefault();
+                $state.go('auth.login');
+            }
         }
     });
 

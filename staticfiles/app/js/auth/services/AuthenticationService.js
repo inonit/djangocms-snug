@@ -1,5 +1,5 @@
 /**
- * Authentication service for djangocms-snug.
+ * Authentication.
  */
 
 'use strict';

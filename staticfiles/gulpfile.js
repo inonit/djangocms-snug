@@ -70,8 +70,6 @@ gulp.task('compile:angular-templates', function () {
     gulp.src('./app/js/**/templates/*.html')
         .pipe(templateCache({
             standalone: true
-            //module: 'App',
-            //moduleSystem: 'Browserify'
         }))
         .pipe(gulp.dest('../djangocms_snug/static/djangocms_snug/js'))
 });
