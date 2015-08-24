@@ -201,13 +201,13 @@ var App = angular.module('App', [
 
         if (toState.data.requiredRoles) {
             // Make sure the user has all the required roles.
-            var hasRoles = _.map(toState.data.requiredRoles, function(role) {
+            var hasRoles = _.map(toState.data.requiredRoles, function (role) {
                 return AuthorizationService.roles().indexOf(role) > -1;
             });
 
-            if (!hasRoles.every(function(elem) {
+            if (!hasRoles.every(function (elem) {
                     return elem === true;
-            })) {
+                })) {
                 e.preventDefault();
                 $state.go('auth.login');
             }
@@ -218,8 +218,11 @@ var App = angular.module('App', [
      * If user is authenticated, set the JWT token in the request header
      * on all Restangular requests.
      * */
-    Restangular.addFullRequestInterceptor(function (element, operation, route, url, headers, params) {
+    Restangular.addFullRequestInterceptor(function (headers, params, element, httpConfig) {
         if (AuthenticationService.isAuthenticated()) {
+            if (AuthenticationService.isTokenExpired()) {
+                AuthenticationService.refresh(AuthenticationService.getToken());
+            }
             headers.Authorization = 'JWT ' + AuthenticationService.getToken();
         }
     });

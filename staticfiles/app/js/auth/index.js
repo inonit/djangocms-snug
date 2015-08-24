@@ -16,11 +16,12 @@ module.controller('LogoutController', ['$scope', '$state', 'AuthenticationServic
  * Services
  * */
 module.factory('AuthenticationService', [
-    '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
-    ,'APITokenRefreshService', 'APITokenVerifyService',
+    'jwtHelper', 'AuthenticationStore', 'AuthorizationService',
+    'APITokenAuthService' ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
-module.factory('AuthorizationService', ['AuthenticationStore', require('./services/AuthorizationService')]);
-
+module.factory('AuthorizationService', [
+    '$timeout', 'jwtHelper', 'AuthenticationStore',
+    require('./services/AuthorizationService')]);
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
 
 module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);

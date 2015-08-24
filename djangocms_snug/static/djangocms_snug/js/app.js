@@ -56,11 +56,12 @@ module.controller('LogoutController', ['$scope', '$state', 'AuthenticationServic
  * Services
  * */
 module.factory('AuthenticationService', [
-    '$timeout', 'jwtHelper', 'AuthenticationStore', 'APITokenAuthService'
-    ,'APITokenRefreshService', 'APITokenVerifyService',
+    'jwtHelper', 'AuthenticationStore', 'AuthorizationService',
+    'APITokenAuthService' ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
-module.factory('AuthorizationService', ['AuthenticationStore', require('./services/AuthorizationService')]);
-
+module.factory('AuthorizationService', [
+    '$timeout', 'jwtHelper', 'AuthenticationStore',
+    require('./services/AuthorizationService')]);
 module.factory('AuthenticationStore', ['store', require('./services/AuthenticationStore')]);
 
 module.factory('APITokenAuthService', ['Restangular', require('./services/APITokenAuthService')]);
@@ -110,32 +111,23 @@ module.exports = function (Restangular) {
 
 'use strict';
 
-module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAuthService,
-                           APITokenRefreshService, APITokenVerifyService) {
-
-    var Authorize = function (token) {
-        AuthenticationStore.set('token', token);
-        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
-    };
-    var DeAuthorize = function () {
-        AuthenticationStore.remove('token');
-        AuthenticationStore.remove('payload');
-    };
+module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
+                           APITokenAuthService, APITokenRefreshService, APITokenVerifyService) {
 
     return {
         login: function (credentials) {
             return APITokenAuthService.post(credentials).then(function (response) {
-                Authorize(response.token);
+                AuthorizationService.Authorize(response.token);
             });
         },
         logout: function () {
-            return $timeout(DeAuthorize, 0, true);
+            return AuthorizationService.DeAuthorize();
         },
         refresh: function (token) {
             APITokenRefreshService.post({
                 token: token
             }).then(function (response) {
-                Authorize(response.token);
+                AuthorizationService.Authorize(response.token);
             });
         },
         getToken: function () {
@@ -187,10 +179,24 @@ module.exports = function (store) {
 
 'use strict';
 
-module.exports = function (AuthenticationStore) {
-    var payload = AuthenticationStore.get('payload');
+module.exports = function ($timeout, jwtHelper, AuthenticationStore) {
+
+    var Authorize = function (token) {
+        $timeout(function() {
+            AuthenticationStore.set('token', token);
+            AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
+        });
+    };
+
+    var DeAuthorize = function () {
+        $timeout(function() {
+            AuthenticationStore.remove('token');
+            AuthenticationStore.remove('payload');
+        });
+    };
 
     var groups = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.groups : [];
     };
 
@@ -213,14 +219,17 @@ module.exports = function (AuthenticationStore) {
     };
 
     var isSuperuser = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.is_superuser : false;
     };
 
     var isStaff = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.is_staff || payload.is_superuser : false;
     };
 
     var inGroup = function (group) {
+        var payload = AuthenticationStore.get('payload');
         if (!payload) {
             return false;
         }
@@ -228,6 +237,7 @@ module.exports = function (AuthenticationStore) {
     };
 
     var hasPerm = function (codename) {
+        var payload = AuthenticationStore.get('payload');
         if (!payload) {
             return false;
         }
@@ -239,6 +249,8 @@ module.exports = function (AuthenticationStore) {
     };
 
     return {
+        Authorize: Authorize,
+        DeAuthorize: DeAuthorize,
         groups: groups,
         roles: roles,
         isSuperuser: isSuperuser,
@@ -718,13 +730,13 @@ var App = angular.module('App', [
 
         if (toState.data.requiredRoles) {
             // Make sure the user has all the required roles.
-            var hasRoles = _.map(toState.data.requiredRoles, function(role) {
+            var hasRoles = _.map(toState.data.requiredRoles, function (role) {
                 return AuthorizationService.roles().indexOf(role) > -1;
             });
 
-            if (!hasRoles.every(function(elem) {
+            if (!hasRoles.every(function (elem) {
                     return elem === true;
-            })) {
+                })) {
                 e.preventDefault();
                 $state.go('auth.login');
             }
@@ -735,8 +747,11 @@ var App = angular.module('App', [
      * If user is authenticated, set the JWT token in the request header
      * on all Restangular requests.
      * */
-    Restangular.addFullRequestInterceptor(function (element, operation, route, url, headers, params) {
+    Restangular.addFullRequestInterceptor(function (headers, params, element, httpConfig) {
         if (AuthenticationService.isAuthenticated()) {
+            if (AuthenticationService.isTokenExpired()) {
+                AuthenticationService.refresh(AuthenticationService.getToken());
+            }
             headers.Authorization = 'JWT ' + AuthenticationService.getToken();
         }
     });

@@ -5,10 +5,24 @@
 
 'use strict';
 
-module.exports = function (AuthenticationStore) {
-    var payload = AuthenticationStore.get('payload');
+module.exports = function ($timeout, jwtHelper, AuthenticationStore) {
+
+    var Authorize = function (token) {
+        $timeout(function() {
+            AuthenticationStore.set('token', token);
+            AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
+        });
+    };
+
+    var DeAuthorize = function () {
+        $timeout(function() {
+            AuthenticationStore.remove('token');
+            AuthenticationStore.remove('payload');
+        });
+    };
 
     var groups = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.groups : [];
     };
 
@@ -31,14 +45,17 @@ module.exports = function (AuthenticationStore) {
     };
 
     var isSuperuser = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.is_superuser : false;
     };
 
     var isStaff = function () {
+        var payload = AuthenticationStore.get('payload');
         return payload ? payload.is_staff || payload.is_superuser : false;
     };
 
     var inGroup = function (group) {
+        var payload = AuthenticationStore.get('payload');
         if (!payload) {
             return false;
         }
@@ -46,6 +63,7 @@ module.exports = function (AuthenticationStore) {
     };
 
     var hasPerm = function (codename) {
+        var payload = AuthenticationStore.get('payload');
         if (!payload) {
             return false;
         }
@@ -57,6 +75,8 @@ module.exports = function (AuthenticationStore) {
     };
 
     return {
+        Authorize: Authorize,
+        DeAuthorize: DeAuthorize,
         groups: groups,
         roles: roles,
         isSuperuser: isSuperuser,

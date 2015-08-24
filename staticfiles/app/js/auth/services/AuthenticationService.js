@@ -4,32 +4,23 @@
 
 'use strict';
 
-module.exports = function ($timeout, jwtHelper, AuthenticationStore, APITokenAuthService,
-                           APITokenRefreshService, APITokenVerifyService) {
-
-    var Authorize = function (token) {
-        AuthenticationStore.set('token', token);
-        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
-    };
-    var DeAuthorize = function () {
-        AuthenticationStore.remove('token');
-        AuthenticationStore.remove('payload');
-    };
+module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
+                           APITokenAuthService, APITokenRefreshService, APITokenVerifyService) {
 
     return {
         login: function (credentials) {
             return APITokenAuthService.post(credentials).then(function (response) {
-                Authorize(response.token);
+                AuthorizationService.Authorize(response.token);
             });
         },
         logout: function () {
-            return $timeout(DeAuthorize, 0, true);
+            return AuthorizationService.DeAuthorize();
         },
         refresh: function (token) {
             APITokenRefreshService.post({
                 token: token
             }).then(function (response) {
-                Authorize(response.token);
+                AuthorizationService.Authorize(response.token);
             });
         },
         getToken: function () {
