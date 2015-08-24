@@ -56,7 +56,7 @@ module.controller('LogoutController', ['$scope', '$state', 'AuthenticationServic
  * Services
  * */
 module.factory('AuthenticationService', [
-    'jwtHelper', 'AuthenticationStore', 'AuthorizationService',
+    '$timeout', 'jwtHelper', 'AuthenticationStore', 'AuthorizationService',
     'APITokenAuthService' ,'APITokenRefreshService', 'APITokenVerifyService',
     require('./services/AuthenticationService')]);
 module.factory('AuthorizationService', [
@@ -111,7 +111,7 @@ module.exports = function (Restangular) {
 
 'use strict';
 
-module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
+module.exports = function ($timeout, jwtHelper, AuthenticationStore, AuthorizationService,
                            APITokenAuthService, APITokenRefreshService, APITokenVerifyService) {
 
     return {
@@ -121,7 +121,9 @@ module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
             });
         },
         logout: function () {
-            return AuthorizationService.DeAuthorize();
+            return $timeout(function() {
+               AuthorizationService.DeAuthorize();
+            });
         },
         refresh: function (token) {
             APITokenRefreshService.post({
@@ -182,17 +184,13 @@ module.exports = function (store) {
 module.exports = function ($timeout, jwtHelper, AuthenticationStore) {
 
     var Authorize = function (token) {
-        $timeout(function() {
-            AuthenticationStore.set('token', token);
-            AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
-        });
+        AuthenticationStore.set('token', token);
+        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
     };
 
     var DeAuthorize = function () {
-        $timeout(function() {
-            AuthenticationStore.remove('token');
-            AuthenticationStore.remove('payload');
-        });
+        AuthenticationStore.remove('token');
+        AuthenticationStore.remove('payload');
     };
 
     var groups = function () {
@@ -470,6 +468,14 @@ module.exports = function ($scope, $mdBottomSheet) {
 
 module.exports = function ($scope) {
 
+    //APICMSShowMenuService.getList({
+    //    start_level: 0,
+    //    end_level: 100,
+    //    extra_inactive: 0,
+    //    extra_active: 100}).then(function (response) {
+    //    console.log(response);
+    //    $scope.menu = response;
+    //});
 };
 
 },{}],15:[function(require,module,exports){
@@ -525,6 +531,11 @@ module.controller('DashboardController', ['$scope', '$mdBottomSheet', '$mdSidena
 module.controller('DemoController', ['$timeout', '$q', require('./controllers/DemoController')]);
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
+
+/**
+ * Services
+ * */
+//module.factory('APICMSShowMenuService', ['Restangular', require('./services/APICMSShowMenuService')]);
 
 },{"./controllers/DashboardController":10,"./controllers/DemoController":11,"./controllers/DialogController":12,"./controllers/ListBottomSheetController":13,"./controllers/SidenavController":14,"./controllers/ToolbarController":15,"angular":25}],17:[function(require,module,exports){
 /**

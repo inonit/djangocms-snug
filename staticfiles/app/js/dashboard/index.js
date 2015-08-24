@@ -17,3 +17,8 @@ module.controller('DashboardController', ['$scope', '$mdBottomSheet', '$mdSidena
 module.controller('DemoController', ['$timeout', '$q', require('./controllers/DemoController')]);
 module.controller('ListBottomSheetController', ['$scope', '$mdBottomSheet', require('./controllers/ListBottomSheetController')]);
 module.controller('DialogController', ['$scope', '$mdDialog', require('./controllers/DialogController')]);
+
+/**
+ * Services
+ * */
+//module.factory('APICMSShowMenuService', ['Restangular', require('./services/APICMSShowMenuService')]);

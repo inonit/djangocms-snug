@@ -4,7 +4,7 @@
 
 'use strict';
 
-module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
+module.exports = function ($timeout, jwtHelper, AuthenticationStore, AuthorizationService,
                            APITokenAuthService, APITokenRefreshService, APITokenVerifyService) {
 
     return {
@@ -14,7 +14,9 @@ module.exports = function (jwtHelper, AuthenticationStore, AuthorizationService,
             });
         },
         logout: function () {
-            return AuthorizationService.DeAuthorize();
+            return $timeout(function() {
+               AuthorizationService.DeAuthorize();
+            });
         },
         refresh: function (token) {
             APITokenRefreshService.post({

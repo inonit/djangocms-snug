@@ -8,17 +8,13 @@
 module.exports = function ($timeout, jwtHelper, AuthenticationStore) {
 
     var Authorize = function (token) {
-        $timeout(function() {
-            AuthenticationStore.set('token', token);
-            AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
-        });
+        AuthenticationStore.set('token', token);
+        AuthenticationStore.set('payload', jwtHelper.decodeToken(token));
     };
 
     var DeAuthorize = function () {
-        $timeout(function() {
-            AuthenticationStore.remove('token');
-            AuthenticationStore.remove('payload');
-        });
+        AuthenticationStore.remove('token');
+        AuthenticationStore.remove('payload');
     };
 
     var groups = function () {
